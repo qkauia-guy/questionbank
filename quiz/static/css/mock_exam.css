@@ -142,3 +142,19 @@ pre:hover, code:hover {
 .canvas-controls input {
   margin-left: 6px;
 }
+
+/* 計時器 */
+#floating-timer {
+  position: fixed;
+  top: 65px; /* ← 可自行調整 */
+  left: 12px;
+  background: #e6f3ff;
+  border: 1px solid #007bff;
+  color: #007bff;
+  font-weight: bold;
+  padding: 6px 12px;
+  border-radius: 8px;
+  z-index: 1000;
+  font-size: 16px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
