@@ -1,0 +1,38 @@
+{% load static %}
+{% load markdown_deux_tags %}
+{% load quiz_extras %}
+
+<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8">
+    <title>模擬測驗</title>
+
+    <!-- 第三方樣式 -->
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- 自訂樣式 -->
+    <link rel="stylesheet" href="{% static 'css/mock_exam.css' %}">
+
+    <!-- JavaScript 檔案引入 -->
+    <script src="{% static 'js/toggle.js' %}" defer></script>
+    <script src="{% static 'js/mock_exam.js' %}" defer></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" defer></script>
+
+    <!-- 程式碼高亮初始化 -->
+    <script defer>
+      document.addEventListener("DOMContentLoaded", function () {
+        hljs.highlightAll();
+      });
+    </script>
+  </head>
+
+  <body>
+    {% include 'quiz/_search_bar.html' %}
+    <div class="container">
+      {% include 'quiz/_question_card.html' %}
+    </div>
+    {% include 'quiz/_overlay_canvas.html' %}
+  </body>
+</html>

@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>題庫列表</title>
+</head>
+<body>
+  <h1>所有題目</h1>
+  <ul>
+    {% for q in questions %}
+      <li>
+        <strong>{{ q.chapter }}-{{ q.number }}</strong><br>
+        {{ q.question_text }}<br>
+        A. {{ q.choice_a }}<br>
+        B. {{ q.choice_b }}<br>
+        C. {{ q.choice_c }}<br>
+        D. {{ q.choice_d }}<br>
+        答案：{{ q.answer }}
+      </li>
+    {% endfor %}
+  </ul>
+</body>
+</html>

@@ -1,0 +1,144 @@
+/* ========== 通用樣式 ========== */
+body {
+  padding: 40px;
+  background: #f9f9f9;
+}
+
+/* ========== 題目卡片區塊 ========== */
+.question-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 25px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  margin-bottom: 25px;
+}
+
+/* ========== 題目選項區塊（含 hover 效果） ========== */
+.form-check {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  word-break: break-word;
+  margin-bottom: 12px;
+  padding: 12px 16px;
+  background: linear-gradient(to right, #f0f4ff, #e6f0ff);
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+.form-check:hover {
+  background: linear-gradient(to right, #dde8ff, #cce0ff);
+}
+
+.form-check-input {
+  margin-right: 10px;
+  flex-shrink: 0;
+}
+
+.form-check-label {
+  flex-grow: 1;
+  margin-bottom: 0;
+}
+
+.form-check-input:checked ~ .form-check-label {
+  font-weight: bold;
+  color: #0d6efd;
+}
+
+/* ========== 表格樣式 ========== */
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1em 0;
+}
+
+th, td {
+  border: 1px solid #ccc;
+  padding: 8px;
+  text-align: left;
+}
+
+/* ========== 答案解析區 ========== */
+.explanation {
+  background: #fff9e6;
+  border-left: 6px solid #ffcc00;
+  padding: 15px;
+  margin-top: 20px;
+  border-radius: 8px;
+}
+
+/* ========== Markdown 程式碼區塊樣式 ========== */
+pre, code {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-x: auto;
+  font-family: 'Courier New', monospace;
+  background-color: #eef1f5;
+  color: #2c3e50;
+  padding: 12px;
+  border-radius: 6px;
+  margin: 15px 0;
+}
+
+pre:hover, code:hover {
+  background-color: #e9efff;
+}
+
+/* ========== 搜尋欄（右上固定） ========== */
+.fixed-search-bar {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  background-color: #ffffff;
+  padding: 16px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  width: 230px;
+  transition: all 0.3s ease;
+}
+
+.fixed-search-bar.collapsed form {
+  display: none;
+}
+
+.toggle-btn {
+  border: none;
+  width: 100%;
+  padding: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+
+/* ========== 畫布（全畫面） ========== */
+#overlayCanvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 999;
+  pointer-events: none; /* 當畫筆啟用時會切換為 auto */
+}
+
+/* ========== 畫布控制面板 ========== */
+.canvas-controls {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 12px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  font-size: 14px;
+}
+
+.canvas-controls label,
+.canvas-controls select,
+.canvas-controls input {
+  margin-left: 6px;
+}
