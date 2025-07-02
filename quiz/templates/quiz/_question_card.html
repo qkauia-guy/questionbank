@@ -1,6 +1,11 @@
 {% load quiz_extras %}
 {% load markdown_deux_tags %}
 
+<!-- ⬆️ 左上角浮出秒數 -->
+<div id="floating-timer">
+  ⏱️ 作答時間：<span id="timer">0</span> 秒
+</div>
+
 <div class="container">
   <div class="mb-3 text-muted">
     🗂 類別：{{ question.category }}　
@@ -40,6 +45,9 @@
           <input type="text" class="form-control" name="fill_answer" id="fill_answer" value="">
         </div>
       {% endif %}
+
+      <!-- 隱藏欄位傳遞 used_time -->
+      <input type="hidden" name="used_time" id="used_time" value="0">
 
       <button type="submit" name="skip" value="1" class="btn btn-secondary mt-3 ms-2">跳過</button>
       <button type="submit" class="btn btn-primary mt-3">送出</button>
