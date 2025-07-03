@@ -25,7 +25,7 @@ SECRET_KEY = "django-insecure-t%@jh7=#pug*x4n@7tm-s(fzzvo%owt92=$7sp7n=cnwdn^k#e
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]  # 開發用，表示允許所有主機
 
 
 # Application definition
@@ -63,6 +63,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "quiz.context_processors.total_question_count",
             ],
         },
     },
