@@ -3,14 +3,16 @@
 
 <!-- ⬆️ 左上角浮出秒數 -->
 <div id="floating-timer">
-  ⏱️ 作答時間：<span id="timer">0</span> 秒
+  作答時間：<span id="timer">0</span> 秒
 </div>
 
 <div class="container">
   <div class="mb-3 text-muted">
-    🗂 類別：{{ question.category }}　
-    📘 章節：{{ question.chapter }} - {{ question.number }}
-  </div>
+  <span class="me-3">🗂 類別：{{ question.category }}</span>
+  <span class="me-3">📘 章節：{{ question.chapter }} - {{ question.number }}</span>
+  <span>📚 題庫總數：{{ total_question_count }} 題</span>
+</div>
+  <!-- ⬇️ 選項 -->
 
   <div class="question-card">
     <form method="post">
@@ -76,4 +78,6 @@
       {% endif %}
     </form>
   </div>
+</div>
+    {% include 'quiz/_overlay_canvas.html' %}
 </div>

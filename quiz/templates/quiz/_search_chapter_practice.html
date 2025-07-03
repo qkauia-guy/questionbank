@@ -1,0 +1,52 @@
+<div class="fixed-search-bar collapsed" id="searchBar">
+  <button class="toggle-btn btn btn-sm btn-outline-primary" onclick="toggleSearchBar()">
+    <span id="toggleIcon">▼</span> 搜尋題目
+  </button>
+
+  <form method="get" action="{% url 'chapter_practice' %}" class="row g-2 mt-2 px-2">
+    <div class="col-6">
+      <select name="chapter" id="chapter" class="form-select form-select-sm" onchange="fetchNumbers()">
+        <option value="">章節</option>
+        {% for ch in chapter_list %}
+          <option value="{{ ch }}" {% if category == ch %}selected{% endif %}>{{ ch }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-6">
+      <select name="number" id="number" class="form-select form-select-sm">
+        <option value="">題號</option>
+        {% for num in number_list %}
+          <option value="{{ num }}" {% if number == num %}selected{% endif %}>{{ num }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-12">
+      <button type="submit" class="btn btn-sm btn-secondary w-100">搜尋</button>
+    </div>
+  </form>
+</div>
+
+<script>
+  function fetchNumbers() {
+    const chapterSelect = document.getElementById("chapter");
+    const selectedChapter = chapterSelect.value;
+
+    fetch(`/get_numbers/?chapter=${selectedChapter}`)
+      .then(response => response.json())
+      .then(data => {
+        const numberSelect = document.getElementById("number");
+        numberSelect.innerHTML = '<option value="">題號</option>';
+        data.numbers.forEach(num => {
+          const option = document.createElement("option");
+          option.value = num;
+          option.textContent = num;
+          numberSelect.appendChild(option);
+        });
+      })
+      .catch(error => {
+        console.error("取得題號失敗：", error);
+      });
+  }
+</script>
