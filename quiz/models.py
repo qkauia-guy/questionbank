@@ -33,6 +33,7 @@ class QuestionRecord(models.Model):
     answered_at = models.DateTimeField(auto_now_add=True)
     selected_answer = models.CharField(max_length=50, blank=True)
     used_time = models.IntegerField(default=0)
+    ai_explanation = models.TextField(null=True, blank=True)
 
     def __str__(self):
         who = self.user.username if self.user else f"Session-{self.session_key}"
