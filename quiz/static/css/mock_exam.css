@@ -2,6 +2,7 @@
 body {
   padding: 40px;
   background: #f9f9f9;
+  color: #333;
 }
 
 /* ========== 題目卡片區塊 ========== */
@@ -13,7 +14,7 @@ body {
   margin-bottom: 25px;
 }
 
-/* ========== 題目選項區塊（含 hover 效果） ========== */
+/* ========== 題目選項區塊 ========== */
 .form-check {
   display: flex;
   align-items: center;
@@ -50,12 +51,44 @@ table {
   border-collapse: collapse;
   width: 100%;
   margin: 1em 0;
+  color: #333;
 }
 
 th, td {
   border: 1px solid #ccc;
   padding: 8px;
   text-align: left;
+  vertical-align: middle;
+}
+
+.exam-table a {
+  text-decoration: none !important;
+  color: #333 !important;
+}
+
+.exam-table a:hover {
+  text-decoration: underline !important;
+}
+
+/* ========== 狀態顏色樣式 ========== */
+.text-correct {
+  color: #28a745 !important; /* 綠色 */
+  font-weight: bold;
+}
+
+.text-wrong {
+  color: #dc3545 !important; /* 紅色 */
+  font-weight: bold;
+}
+
+.text-slow {
+  color: #fd7e14 !important; /* 橘色 */
+  font-weight: bold;
+}
+
+.text-very-slow {
+  color: #dc3545 !important; /* 紅色 */
+  font-weight: bold;
 }
 
 /* ========== 答案解析區 ========== */
@@ -67,7 +100,7 @@ th, td {
   border-radius: 8px;
 }
 
-/* ========== Markdown 程式碼區塊樣式 ========== */
+/* ========== Markdown 程式碼區塊 ========== */
 pre {
   white-space: pre-wrap;
   word-wrap: break-word;
@@ -92,7 +125,7 @@ pre:hover, code:hover {
   background-color: #e9efff;
 }
 
-/* ========== 搜尋欄（右上固定） ========== */
+/* ========== 搜尋欄（左上固定） ========== */
 .fixed-search-bar {
   position: fixed;
   top: 20px;
@@ -121,7 +154,7 @@ pre:hover, code:hover {
   margin-bottom: 8px;
 }
 
-/* ========== 畫布（全畫面） ========== */
+/* ========== 畫布區塊 ========== */
 #overlayCanvas {
   position: fixed;
   top: 0;
@@ -129,7 +162,7 @@ pre:hover, code:hover {
   width: 100vw;
   height: 100vh;
   z-index: 999;
-  pointer-events: none; /* 當畫筆啟用時會切換為 auto */
+  pointer-events: none;
 }
 
 /* ========== 畫布控制面板 ========== */
@@ -151,12 +184,12 @@ pre:hover, code:hover {
   margin-left: 6px;
 }
 
-/* 計時器 */
+/* ========== 計時器樣式 ========== */
 #floating-timer {
   position: fixed;
   top: 200px;
   left: 12px;
-  background: rgba(230, 243, 255, 0.3); /* ✅ 半透明背景 */
+  background: rgba(230, 243, 255, 0.3);
   border: 1px solid #007bff;
   color: #007bff;
   font-weight: bold;
@@ -172,6 +205,7 @@ pre:hover, code:hover {
   color: #fff;
 }
 
+/* ========== 列表樣式 ========== */
 ul {
   padding-left: 1.5rem;
   margin-bottom: 1rem;
