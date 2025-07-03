@@ -5,6 +5,179 @@ import json  # 用於處理 JSON 數據 (雖然在此程式碼中未直接使用
 from django.shortcuts import render, redirect  # Django 的捷徑功能，用於渲染模板和重定向
 from .models import Question, QuestionRecord  # 從本地 models.py 匯入資料庫模型
 from django.http import JsonResponse  # 用於回傳 JSON 格式的 HTTP 回應
+from django.contrib.auth.decorators import (
+    login_required,
+)  # 用於限制視圖只能被登入的使用者訪問
+
+
+@login_required
+def exam_history(request):
+    records = (
+        QuestionRecord.objects.filter(user=request.user)
+        .select_related("question")
+        .order_by("-answered_at")
+    )
+    return render(request, "quiz/exam_history.html", {"records": records})
+
+
+@login_required
+def review_wrong_questions(request):
+    wrong_records = (
+        QuestionRecord.objects.filter(user=request.user, is_correct=False)
+        .select_related("question")
+        .order_by("-answered_at")  # ✅ 修正這一行
+    )
+
+    questions = [record.question for record in wrong_records]
+
+    return render(
+        request,
+        "quiz/review_wrong_questions.html",
+        {
+            "questions": questions,
+            "records": wrong_records,
+        },
+    )
+
+
+def get_next_question(exclude_id=None):
+    questions = Question.objects.all().order_by("chapter", "number")
+    if exclude_id:
+        questions = questions.exclude(id=exclude_id)
+    return questions.first() if questions.exists() else None
+
+
+def check_answer(question, selected_answer, fill_input):
+    correct_answer = question.answer.upper()
+    if question.is_fill_in:
+        return fill_input.strip() == question.fill_answer.strip()
+    else:
+        user_ans = "".join(selected_answer).strip().upper()
+        if question.require_order:
+            return user_ans == correct_answer
+        else:
+            return sorted(user_ans) == sorted(correct_answer)
+
+
+def reset_chapter_practice(request):
+    if "question_ids" in request.session:
+        del request.session["question_ids"]
+    if "current_index" in request.session:
+        del request.session["current_index"]
+    return redirect("chapter_practice")
+
+
+@login_required
+def chapter_practice(request):
+    chapter = request.GET.get("chapter")
+    number = request.GET.get("number")
+
+    # 篩選題目
+    questions = Question.objects.order_by("chapter", "number")
+    if chapter:
+        questions = questions.filter(chapter=chapter)
+    if number:
+        questions = questions.filter(number=number)
+
+    total_question_count = Question.objects.count()
+
+    if total_question_count == 0:
+        return render(request, "quiz/chapter_practice.html", {"no_question": True})
+
+    # 初始化 index
+    if "current_index" not in request.session:
+        request.session["current_index"] = 0
+
+    # 按下重新開始
+    if "restart" in request.POST:
+        request.session["current_index"] = 0
+        return redirect("chapter_practice")
+
+    # 上一題
+    if "prev" in request.POST:
+        request.session["current_index"] = max(request.session["current_index"] - 1, 0)
+        return redirect("chapter_practice")
+
+    # 跳過
+    if "skip" in request.POST:
+        if request.session["current_index"] < total_question_count - 1:
+            request.session["current_index"] += 1
+        return redirect("chapter_practice")
+
+    # ✅ 安全地取得 current_index 並防止越界
+    current_index = request.session.get("current_index", 0)
+    if current_index >= total_question_count:
+        current_index = max(total_question_count - 1, 0)
+        request.session["current_index"] = current_index
+
+    # 取得目前題目
+    question = questions[current_index]
+
+    selected_answer = [a.upper() for a in request.POST.getlist("selected_answer")]
+    fill_input = request.POST.get("fill_answer", "").strip()
+    result = None
+    correct_answer = None
+    ai_explanation = None
+
+    # 送出答案後批改
+    if request.method == "POST" and "next" not in request.POST:
+        result = check_answer(question, selected_answer, fill_input)
+        correct_answer = question.answer
+        used_time = request.POST.get("used_time", 0)
+
+        # 儲存作答記錄
+        QuestionRecord.objects.create(
+            user=request.user,
+            question=question,
+            is_correct=result,
+            selected_answer=(
+                "".join(selected_answer) if not question.is_fill_in else fill_input
+            ),
+            used_time=used_time,
+        )
+
+        # 若答錯，呼叫 AI 解釋
+        if not result:
+            ai_explanation = get_ai_feedback_ollama(
+                question.question_text,
+                fill_input if question.is_fill_in else "".join(selected_answer),
+                correct_answer,
+            )
+
+    # 下一題
+    if "next" in request.POST:
+        if request.session["current_index"] < total_question_count - 1:
+            request.session["current_index"] += 1
+        return redirect("chapter_practice")
+
+    # 下拉選單資料
+    chapter_list = Question.objects.values_list("chapter", flat=True).distinct()
+    number_list = (
+        Question.objects.filter(chapter=chapter)
+        .values_list("number", flat=True)
+        .distinct()
+        if chapter
+        else []
+    )
+
+    return render(
+        request,
+        "quiz/chapter_practice.html",
+        {
+            "question": question,
+            "selected_answer": selected_answer,
+            "fill_input": fill_input,
+            "result": result,
+            "correct_answer": correct_answer,
+            "ai_explanation": ai_explanation,
+            "total_question_count": total_question_count,
+            "current_index": current_index + 1,  # 顯示用（第幾題）
+            "chapter_list": chapter_list,
+            "number_list": number_list,
+            "category": chapter,
+            "number": number,
+        },
+    )
 
 
 # 根據章節取得題號列表的 API視圖

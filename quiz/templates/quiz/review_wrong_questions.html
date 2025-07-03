@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="container mt-4">
+    {% for record in records %}
+      <div class="card my-3">
+        <div class="card-header">
+          📘 {{ record.question.chapter }} - {{ record.question.number }}
+        </div>
+        <div class="card-body">
+          {{ record.question.question_text|linebreaksbr }}
+          <p class="text-danger mt-2">你的答案：{{ record.selected_answer }}</p>
+        </div>
+      </div>
+    {% empty %}
+      <p class="text-muted">太棒了！目前沒有錯題可複習。</p>
+    {% endfor %}
+  </div>
+{% endblock %}

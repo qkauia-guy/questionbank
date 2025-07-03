@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="container mt-4">
+    <div class="table-responsive">
+      <table class="table table-hover table-bordered align-middle text-center shadow-sm">
+        <thead class="table-light">
+          <tr>
+            <th scope="col">章節</th>
+            <th scope="col">題號</th>
+            <th scope="col">結果</th>
+            <th scope="col">時間（秒）</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for record in records %}
+            <tr class="{% if not record.is_correct %}wrong-answer{% endif %}">
+              <td>{{ record.question.chapter }}</td>
+              <td>{{ record.question.number }}</td>
+              <td>
+                {% if record.is_correct %}
+                  ✅ 正確
+                {% else %}
+                  ❌ 錯誤
+                {% endif %}
+              </td>
+              <td>{{ record.used_time }}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="4" class="text-muted">尚無紀錄</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}

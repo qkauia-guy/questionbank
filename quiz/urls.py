@@ -5,4 +5,7 @@ urlpatterns = [
     path("", views.question_list, name="question_list"),
     path("mock/", views.mock_exam, name="mock_exam"),
     path("get_numbers/", views.get_numbers_by_chapter, name="get_numbers_by_chapter"),
+    path("review/", views.review_wrong_questions, name="review_wrong_questions"),
+    path("history/", views.exam_history, name="exam_history"),
+    path("practice/", views.chapter_practice, name="chapter_practice"),
 ]
