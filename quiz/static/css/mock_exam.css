@@ -154,7 +154,7 @@ pre:hover, code:hover {
 /* 計時器 */
 #floating-timer {
   position: fixed;
-  top: 130px;
+  top: 200px;
   left: 12px;
   background: rgba(230, 243, 255, 0.3); /* ✅ 半透明背景 */
   border: 1px solid #007bff;

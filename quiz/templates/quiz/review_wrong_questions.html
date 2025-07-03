@@ -5,7 +5,10 @@
   {% for record in records %}
     <div class="card my-3">
       <div class="card-header">
-        📘 {{ record.question.chapter }} - {{ record.question.number }}
+        <div class="text-muted">
+          <span class="me-3">🗂 類別：{{ record.question.category }}</span>
+          <span class="me-3">📘 章節：{{ record.question.chapter }} - {{ record.question.number }}</span>
+        </div>
       </div>
       <div class="card-body">
         {{ record.question.question_text|safe_markdown_no_h1|safe }}
