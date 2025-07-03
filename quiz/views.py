@@ -72,45 +72,38 @@ def chapter_practice(request):
     chapter = request.GET.get("chapter")
     number = request.GET.get("number")
 
-    # 篩選題目
     questions = Question.objects.order_by("chapter", "number")
     if chapter:
         questions = questions.filter(chapter=chapter)
     if number:
         questions = questions.filter(number=number)
 
-    total_question_count = Question.objects.count()
+    total_question_count = questions.count()
 
     if total_question_count == 0:
         return render(request, "quiz/chapter_practice.html", {"no_question": True})
 
-    # 初始化 index
     if "current_index" not in request.session:
         request.session["current_index"] = 0
 
-    # 按下重新開始
     if "restart" in request.POST:
         request.session["current_index"] = 0
         return redirect("chapter_practice")
 
-    # 上一題
     if "prev" in request.POST:
         request.session["current_index"] = max(request.session["current_index"] - 1, 0)
         return redirect("chapter_practice")
 
-    # 跳過
     if "skip" in request.POST:
         if request.session["current_index"] < total_question_count - 1:
             request.session["current_index"] += 1
         return redirect("chapter_practice")
 
-    # ✅ 安全地取得 current_index 並防止越界
     current_index = request.session.get("current_index", 0)
     if current_index >= total_question_count:
         current_index = max(total_question_count - 1, 0)
         request.session["current_index"] = current_index
 
-    # 取得目前題目
     question = questions[current_index]
 
     selected_answer = [a.upper() for a in request.POST.getlist("selected_answer")]
@@ -119,13 +112,20 @@ def chapter_practice(request):
     correct_answer = None
     ai_explanation = None
 
-    # 送出答案後批改
     if request.method == "POST" and "next" not in request.POST:
         result = check_answer(question, selected_answer, fill_input)
         correct_answer = question.answer
         used_time = request.POST.get("used_time", 0)
 
-        # 儲存作答記錄
+        # 如果答錯，取得 AI 補充說明
+        if not result:
+            ai_explanation = get_ai_feedback_ollama(
+                question.question_text,
+                fill_input if question.is_fill_in else "".join(selected_answer),
+                correct_answer,
+            )
+
+        # 寫入作答記錄（含 AI 解釋）
         QuestionRecord.objects.create(
             user=request.user,
             question=question,
@@ -134,23 +134,14 @@ def chapter_practice(request):
                 "".join(selected_answer) if not question.is_fill_in else fill_input
             ),
             used_time=used_time,
+            ai_explanation=ai_explanation,
         )
 
-        # 若答錯，呼叫 AI 解釋
-        if not result:
-            ai_explanation = get_ai_feedback_ollama(
-                question.question_text,
-                fill_input if question.is_fill_in else "".join(selected_answer),
-                correct_answer,
-            )
-
-    # 下一題
     if "next" in request.POST:
         if request.session["current_index"] < total_question_count - 1:
             request.session["current_index"] += 1
         return redirect("chapter_practice")
 
-    # 下拉選單資料
     chapter_list = Question.objects.values_list("chapter", flat=True).distinct()
     number_list = (
         Question.objects.filter(chapter=chapter)
@@ -171,7 +162,7 @@ def chapter_practice(request):
             "correct_answer": correct_answer,
             "ai_explanation": ai_explanation,
             "total_question_count": total_question_count,
-            "current_index": current_index + 1,  # 顯示用（第幾題）
+            "current_index": current_index + 1,
             "chapter_list": chapter_list,
             "number_list": number_list,
             "category": chapter,
@@ -393,6 +384,7 @@ def mock_exam(request):
                 ),
                 # 記錄使用者花費的時間
                 used_time=used_time,
+                ai_explanation=ai_explanation if not result else None,
             )
     else:
         # 如果請求方法是 GET (初次載入頁面或重新整理)
