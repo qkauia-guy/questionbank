@@ -2,6 +2,7 @@
 import random  # 用於隨機選擇題目
 import requests  # 用於發送 HTTP 請求 (呼叫 AI 模型)
 import json  # 用於處理 JSON 數據 (雖然在此程式碼中未直接使用，但 requests 內部會用到)
+from django.contrib.auth.forms import UserCreationForm
 from django.shortcuts import render, redirect  # Django 的捷徑功能，用於渲染模板和重定向
 from .models import Question, QuestionRecord  # 從本地 models.py 匯入資料庫模型
 from django.http import JsonResponse  # 用於回傳 JSON 格式的 HTTP 回應
@@ -38,6 +39,17 @@ def review_wrong_questions(request):
             "records": wrong_records,
         },
     )
+
+
+def register(request):
+    if request.method == "POST":
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect("login")  # 成功註冊後導向登入頁
+    else:
+        form = UserCreationForm()
+    return render(request, "registration/register.html", {"form": form})
 
 
 def get_next_question(exclude_id=None):

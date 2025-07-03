@@ -26,6 +26,8 @@ SECRET_KEY = "django-insecure-t%@jh7=#pug*x4n@7tm-s(fzzvo%owt92=$7sp7n=cnwdn^k#e
 DEBUG = True
 
 ALLOWED_HOSTS = ["*"]  # 開發用，表示允許所有主機
+LOGIN_REDIRECT_URL = "/"  # 登入後導向首頁
+LOGOUT_REDIRECT_URL = "/accounts/login/"  # 登出後導向登入
 
 
 # Application definition
