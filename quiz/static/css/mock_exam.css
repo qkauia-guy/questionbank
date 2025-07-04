@@ -235,7 +235,7 @@ li {
 
   /* ⏱ 計時器位置 */
   #floating-timer {
-    top: 85%;
+    top: 28px;
     left: auto;
     right: 12px;
     transform: translateY(-50%);
@@ -293,14 +293,14 @@ li {
   .mobile-search {
     display: none;
     position: fixed;
-    bottom: 80px;
+    bottom: 60px;
     right: 20px;
-    width: 80vw;
+    width: 90vw;
     background: #fff;
     border: 1px solid #ddd;
     border-radius: 10px;
     z-index: 998;
-    padding: 12px;
+    padding: 8px;
     box-shadow: 0 4px 8px rgba(0,0,0,0.2);
   }
 

@@ -11,7 +11,7 @@ const updateTimer = () => {
   usedTimeInput.value = seconds;
 
   if (seconds === MAX_TIME) {
-    alert("⏰ 已超過建議作答時間！");
+    alert("⏱︎ 已超過建議作答時間！");
     if (timerBox) {
       timerBox.style.background = "#ffe6e6";
       timerBox.style.color = "#ff0000";
