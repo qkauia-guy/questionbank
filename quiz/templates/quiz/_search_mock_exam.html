@@ -1,3 +1,4 @@
+<!-- ✅ 桌機版（固定右上） -->
 <div class="fixed-search-bar collapsed" id="searchBar">
   <button class="toggle-btn btn btn-sm btn-outline-primary" onclick="toggleSearchBar()">
     <span id="toggleIcon">▼</span> 搜尋題目
@@ -50,3 +51,31 @@
       });
   }
 </script>
+
+<!-- 📱 手機版（浮動搜尋按鈕與下拉選單） -->
+<div class="d-md-none">
+  <div class="search-fab" onclick="toggleSearchBarMock()">🔍</div>
+  <div id="mobileSearchBar-mock" class="mobile-search shadow">
+    <form method="get" action="{% url 'mock_exam' %}" class="p-3">
+      <div class="mb-2">
+        <select name="chapter" id="chapter_mobile" class="form-select form-select-sm" onchange="fetchNumbersMobile()">
+          <option value="">章節</option>
+          {% for ch in chapter_list %}
+            <option value="{{ ch }}" {% if category == ch %}selected{% endif %}>{{ ch }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="mb-2">
+        <select name="number" id="number_mobile" class="form-select form-select-sm">
+          <option value="">題號</option>
+          {% for num in number_list %}
+            <option value="{{ num }}" {% if number == num %}selected{% endif %}>{{ num }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <button type="submit" class="btn btn-sm btn-secondary w-100">搜尋</button>
+    </form>
+  </div>
+</div>

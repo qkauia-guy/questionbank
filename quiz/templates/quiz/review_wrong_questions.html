@@ -1,31 +1,30 @@
 {% extends "base.html" %}
 {% load quiz_extras %}
 {% block content %}
-<div class="container mt-4">
   {% for record in records %}
     <div class="card my-3">
       <div class="card-header">
-        <div class="text-muted">
+        <div class="text-muted small">
           <span class="me-3">🗂 類別：{{ record.question.category }}</span>
           <span class="me-3">📘 章節：{{ record.question.chapter }} - {{ record.question.number }}</span>
         </div>
       </div>
-      <div class="card-body">
+      <div class="card-body fs-6">
         {{ record.question.question_text|safe_markdown_no_h1|safe }}
 
-        <p class="mt-3">所有選項：</p>
-        <ul>
+        <p class="mt-3 mb-2 fw-bold">所有選項：</p>
+        <ul class="list-group list-group-flush">
           {% for letter in "ABCDEFGH" %}
             {% with choice=record.question|get_choice:letter %}
               {% if choice and choice != "X" %}
-                <li class="
+                <li class="list-group-item small
                   {% if letter in record.question.answer|upper %}text-success{% endif %}
                   {% if letter in record.selected_answer|upper and letter not in record.question.answer|upper %}text-danger{% endif %}
                 ">
                   {% if letter in record.question.answer|upper %}
-                    正確答案 🅥 
+                    🅥 正確答案 
                   {% elif letter in record.selected_answer|upper %}
-                    你選擇的答案 🅧 
+                    🅧 你選擇的答案 
                   {% else %}
                     ☉
                   {% endif %}
@@ -37,12 +36,12 @@
         </ul>
 
         {% if record.ai_explanation %}
-          <button class="btn btn-outline-info btn-sm mt-2" type="button"
+          <button class="btn btn-outline-info btn-sm mt-3" type="button"
                   data-bs-toggle="collapse" data-bs-target="#ai-explanation-{{ forloop.counter }}">
             ▼ 查看 AI 補充說明
           </button>
           <div class="collapse mt-2" id="ai-explanation-{{ forloop.counter }}">
-            <div class="card card-body bg-light border">
+            <div class="card card-body bg-light border small ai-explanation-card">
               {{ record.ai_explanation|safe_markdown_no_h1|safe }}
             </div>
           </div>
@@ -52,5 +51,4 @@
   {% empty %}
     <p class="text-muted">太棒了！目前沒有錯題可複習。</p>
   {% endfor %}
-</div>
 {% endblock %}

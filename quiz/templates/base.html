@@ -6,6 +6,7 @@
 <html lang="zh-Hant">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}模擬測驗{% endblock %}</title>
 
     <!-- ✅ 第三方樣式 -->
@@ -19,6 +20,7 @@
 
     <!-- ✅ JavaScript 檔案引入 -->
     <script src="{% static 'js/toggle.js' %}" defer></script>
+    <script src="{% static 'js/mobile_toggle.js' %}" defer></script>
     <script src="{% static 'js/mock_exam.js' %}" defer></script>
     <script src="{% static 'js/floating_timer.js' %}" defer></script>
     <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" defer></script>
@@ -36,22 +38,43 @@
 
   <body>
     <!-- ✅ 導覽列 -->
-    <nav class="navbar navbar-expand-lg px-4" style="background-color: transparent; border-bottom: none; box-shadow: none;">
-      <div class="container-fluid justify-content-between">
-        <div class="d-flex align-items-center">
-          {% if user.is_authenticated %}
-            <span class="navbar-text me-3">👋 嗨，<strong>{{ user.username }}</strong></span>
-            <form method="post" action="{% url 'logout' %}" class="d-inline">
-              {% csrf_token %}
-              <button type="submit" class="btn btn-outline-danger btn-sm">登出</button>
-            </form>
-          {% else %}
-            <a class="btn btn-outline-primary btn-sm me-2" href="{% url 'login' %}">登入</a>
-            <a class="btn btn-primary btn-sm" href="{% url 'register' %}">註冊</a>
-          {% endif %}
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+      <div class="container-fluid">
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav">
+            {% if user.is_authenticated %}
+              <li class="nav-item">
+                <span class="nav-link">👋 嗨，{{ user.username }}</span>
+              </li>
+              {% if user.userprofile.role == "admin" %}
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'admin:quiz_question_changelist' %}" target="_blank">🛠 題目管理</a>
+                </li>
+              {% endif %}
+              <li class="nav-item">
+                <form method="post" action="{% url 'logout' %}" class="d-inline">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-outline-danger btn-sm">登出</button>
+                </form>
+              </li>
+            {% else %}
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'login' %}">登入</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'register' %}">註冊</a>
+              </li>
+            {% endif %}
+          </ul>
         </div>
       </div>
     </nav>
+
+
 
     <!-- ✅ 功能列 -->
     <div class="container mt-3">

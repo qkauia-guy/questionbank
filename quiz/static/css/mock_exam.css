@@ -5,7 +5,6 @@ body {
   color: #333;
 }
 
-/* ========== 題目卡片區塊 ========== */
 .question-card {
   background: #ffffff;
   border-radius: 12px;
@@ -14,7 +13,6 @@ body {
   margin-bottom: 25px;
 }
 
-/* ========== 題目選項區塊 ========== */
 .form-check {
   display: flex;
   align-items: center;
@@ -70,26 +68,11 @@ th, td {
   text-decoration: underline !important;
 }
 
-/* ========== 狀態顏色樣式 ========== */
-.text-correct {
-  color: #28a745 !important; /* 綠色 */
-  font-weight: bold;
-}
-
-.text-wrong {
-  color: #dc3545 !important; /* 紅色 */
-  font-weight: bold;
-}
-
-.text-slow {
-  color: #fd7e14 !important; /* 橘色 */
-  font-weight: bold;
-}
-
-.text-very-slow {
-  color: #dc3545 !important; /* 紅色 */
-  font-weight: bold;
-}
+/* ========== 狀態色彩 ========== */
+.text-correct    { color: #28a745 !important; font-weight: bold; }
+.text-wrong      { color: #dc3545 !important; font-weight: bold; }
+.text-slow       { color: #fd7e14 !important; font-weight: bold; }
+.text-very-slow  { color: #dc3545 !important; font-weight: bold; }
 
 /* ========== 答案解析區 ========== */
 .explanation {
@@ -125,7 +108,7 @@ pre:hover, code:hover {
   background-color: #e9efff;
 }
 
-/* ========== 搜尋欄（左上固定） ========== */
+/* ========== 搜尋欄 ========== */
 .fixed-search-bar {
   position: fixed;
   top: 20px;
@@ -165,7 +148,6 @@ pre:hover, code:hover {
   pointer-events: none;
 }
 
-/* ========== 畫布控制面板 ========== */
 .canvas-controls {
   position: fixed;
   bottom: 20px;
@@ -215,4 +197,172 @@ li {
   list-style: none;
   line-height: 1.6;
   margin-bottom: 0.5rem;
+}
+
+/* ========== 📱 手機響應式調整 ========== */
+@media (max-width: 768px) {
+  body {
+    padding: 0px;
+  }
+
+  /* 🔍 桌機搜尋欄隱藏，手機用浮動球+彈出 */
+  .fixed-search-bar {
+    display: none !important;
+  }
+
+  .toggle-btn {
+    font-size: 14px;
+  }
+
+  /* ✅ 題目卡片調整 */
+  .question-card {
+    width: 100vw;
+    margin-left: -10px;
+    margin-right: -10px;
+    padding: 12px;
+    border-radius: 6px;
+  }
+
+  .question-card .form-check {
+    padding: 6px 10px;
+    margin-bottom: 10px;
+    font-size: 14px;
+  }
+
+  .question-card .form-check-label {
+    font-size: 14px;
+  }
+
+  /* ⏱ 計時器位置 */
+  #floating-timer {
+    top: 85%;
+    left: auto;
+    right: 12px;
+    transform: translateY(-50%);
+    background: rgba(230, 243, 255, 0.5);
+    font-size: 12px;
+  }
+
+  /* 🖌 隱藏畫筆 */
+  .canvas-controls {
+    display: none !important;
+  }
+
+  /* 📋 表格與按鈕 */
+  table {
+    font-size: 14px;
+  }
+
+  .btn {
+    font-size: 14px !important;
+  }
+
+  .form-check-input {
+    margin-right: 8px;
+  }
+
+  /* 📄 程式碼區塊 */
+  pre {
+    font-size: 11px;
+    line-height: 1.5;
+  }
+
+  code {
+    font-size: 0.85em;
+  }
+
+  /* 📱 搜尋小球 */
+  .search-fab {
+    position: fixed;
+    bottom: 30px;
+    right: 20px;
+    z-index: 999;
+    background-color: #7695c3;
+    color: white;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 48px;
+    font-size: 20px;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  }
+
+  /* 📱 搜尋表單 (初始隱藏) */
+  .mobile-search {
+    display: none;
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    width: 80vw;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    z-index: 998;
+    padding: 12px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  }
+
+  /* 📱 展開狀態 */
+  .mobile-search.active {
+    display: block;
+  }
+
+  .container {
+    padding-left: 5px;
+    padding-right: 5px;
+  }
+
+  .card {
+    width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+    padding: 2px;
+    border-radius: 8px;
+    font-size: 14px;
+  }
+
+  .card-body {
+    padding: 1rem;
+  }
+
+  .list-group-item {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .btn-sm {
+    font-size: 13px;
+    padding: 4px 8px;
+  }
+
+  .exam-table th,
+  .exam-table td {
+    font-size: 13px;
+    padding: 8px;
+    white-space: nowrap;  /* 防止換行 */
+  }
+
+  .exam-table a {
+    font-size: 13px;
+  }
+
+  .fw-bold {
+    font-size: 15px;
+  }
+
+  .ai-explanation-card {
+    width: 100%;
+    margin: 0; /* 避免水平偏移 */
+    padding: 1rem;
+    font-size: 14px;
+    box-sizing: border-box; /* 包含 padding，不超出 */
+    border-radius: 10px;
+    overflow-wrap: break-word; /* 長字不要超出 */
+  }
+
+  /* 確保 collapse 不亂縮 */
+  .collapse {
+    width: 100%;
+  }
 }

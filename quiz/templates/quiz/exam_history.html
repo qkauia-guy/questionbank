@@ -10,28 +10,30 @@
           <table class="table table-bordered align-middle exam-table">
             <thead class="table-light">
               <tr>
-                <th>章節 - 題號</th>
+                <th>類別</th>
+                <th>章節-題號</th>
                 <th>核對答案</th>
-                <th>作答花費時間（標準 60 秒）</th>
+                <th>作答時間</th>
                 <th>測驗模式</th>
               </tr>
             </thead>
             <tbody>
               {% for record in records %}
                 <tr>
+                  <td>{{ record.question.category }}</td>
                   <td>
                     <a href="{% url 'mock_exam' %}?chapter={{ record.question.chapter|urlencode }}&number={{ record.question.number|urlencode }}">
                       {{ record.question.chapter }} - {{ record.question.number }}
                     </a>
                   </td>
-                  <td class="{% if record.is_correct %}text-correct{% else %}text-wrong{% endif %}">
+                  <td class="text-center {% if record.is_correct %}text-correct{% else %}text-wrong{% endif %}">
                     {% if record.is_correct %}
                       🅥
                     {% else %}
                       🅧
                     {% endif %}
                   </td>
-                  <td>
+                  <td class="text-center">
                     {% if record.used_time %}
                       {% if record.used_time >= 120 %}
                         <span class="text-very-slow">{{ record.used_time }} 秒</span>

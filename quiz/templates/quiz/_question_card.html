@@ -12,22 +12,24 @@
     <span class="me-3">📘 章節：{{ question.chapter }} - {{ question.number }}</span>
     <span>📚 題庫總數：{{ total_question_count }} 題</span>
   </div>
-</div>
-  <!-- ⬇️ 選項 -->
 
+  <!-- ⬇️ 題目卡片區塊 -->
   <div class="question-card">
     <form method="post">
       {% csrf_token %}
+      <input type="hidden" name="question_id" value="{{ question.id }}">
+      <input type="hidden" name="used_time" id="used_time" value="0">
 
       <div class="mb-3">
         {{ question.question_text|safe_markdown_no_h1|safe }}
-        <input type="hidden" name="question_id" value="{{ question.id }}">
       </div>
 
+      <!-- ✅ 選項 -->
       {% for option in "ABCDEFGH" %}
         {% with choice=question|get_choice:option %}
           {% if choice and choice|cut:" " != "X" %}
-            <div class="form-check d-flex align-items-center gap-2 py-2 px-3 mb-3 rounded-3" style="background: linear-gradient(to right, #f0f4ff, #e6f0ff);">
+            <div class="form-check d-flex align-items-center gap-2 py-2 px-3 mb-3 rounded-3"
+                 style="background: linear-gradient(to right, #f0f4ff, #e6f0ff);">
               <input class="form-check-input mt-1"
                      type="checkbox"
                      name="selected_answer"
@@ -49,36 +51,58 @@
         </div>
       {% endif %}
 
-      <!-- 隱藏欄位傳遞 used_time -->
-      <input type="hidden" name="used_time" id="used_time" value="0">
+      <div class="d-flex flex-wrap gap-2 mt-3">
+        <button type="submit" name="skip" value="1" class="btn btn-secondary">跳過</button>
+        <button type="submit" class="btn btn-primary">送出</button>
+      </div>
 
-      <button type="submit" name="skip" value="1" class="btn btn-secondary mt-3 ms-2">跳過</button>
-      <button type="submit" class="btn btn-primary mt-3">送出</button>
+      
+    </form>
+    <!-- ✅ 把這段放在 form 外！不是 form 裡！ -->
+    {% if result is not None %}
+    <div class="modal fade" id="resultModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content p-3">
+          <div class="modal-body">
+            {% if result %}
+              ✅ <strong>答對了！</strong><br>
+            {% else %}
+              ❌ <strong>答錯了。</strong><br>
+            {% endif %}
 
-      {% if result is not None %}
-        <div class="explanation">
-          {% if result %}
-            ✅ <strong>答對了！</strong><br>
             {% if correct_answer %}
-              <div class="explanation mt-2">
-                🎯 正確答案：<strong>{{ correct_answer }}</strong>
+              <div class="mt-2">🎯 正確答案：<strong>{{ correct_answer }}</strong></div>
+            {% endif %}
+
+            {% if not result and ai_explanation %}
+              <div class="mt-3">
+                🤖 <strong>AI 補充說明：</strong><br>
+                {{ ai_explanation|safe_markdown_no_h1|safe }}
               </div>
             {% endif %}
-            <button type="submit" name="next" value="1" class="btn btn-success mt-3">下一題 ➡️</button>
-          {% else %}
-            ❌ <strong>答錯了。</strong><br>
-          {% endif %}
-        </div>
-
-        {% if not result and ai_explanation %}
-          <div class="explanation mt-3">
-            🤖 <strong>AI 補充說明：</strong><br>
-            {{ ai_explanation|markdown|safe }}
           </div>
-        {% endif %}
-      {% endif %}
-    </form>
+          <div class="modal-footer">
+            <!-- 注意：還是在 form 裡觸發 submit -->
+            <form method="post">
+              {% csrf_token %}
+              <input type="hidden" name="question_id" value="{{ question.id }}">
+              <button type="submit" name="next" value="1" class="btn btn-success">下一題 ➡️</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 顯示 Modal -->
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        var resultModal = new bootstrap.Modal(document.getElementById('resultModal'));
+        resultModal.show();
+      });
+    </script>
+    {% endif %}
+</div>
   </div>
 </div>
-    {% include 'quiz/_overlay_canvas.html' %}
-</div>
+
+{% include 'quiz/_overlay_canvas.html' %}

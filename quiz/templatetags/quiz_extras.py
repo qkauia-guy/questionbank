@@ -12,7 +12,10 @@ def get_choice(question, letter):
 
 @register.filter
 def safe_markdown_no_h1(value):
-    cleaned = re.sub(r"(?m)^#+\s?", "// ", value)
+    # 把開頭的 # 標題替換為純文字顯示（不轉成 <h1> 等 HTML 標題）
+    cleaned = re.sub(
+        r"(?m)^(\#{1,6})\s*", r"\1 ", value
+    )  # 保留 #，去除 markdown 標題語法作用
     html = markdown2.markdown(cleaned, extras=["fenced-code-blocks", "tables"])
     html = html.replace("<code>", '<code class="language-python">')
     return html
