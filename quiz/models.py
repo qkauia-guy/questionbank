@@ -20,6 +20,7 @@ class Question(models.Model):
     is_fill_in = models.BooleanField(default=False)
     fill_answer = models.CharField(max_length=30, blank=True, default="")
     category = models.CharField(max_length=50, default="Python")
+    number_order = models.FloatField(default=0)
 
     def __str__(self):
         return f"{self.chapter}-{self.number}"
@@ -34,7 +35,24 @@ class QuestionRecord(models.Model):
     selected_answer = models.CharField(max_length=50, blank=True)
     used_time = models.IntegerField(default=0)
     ai_explanation = models.TextField(null=True, blank=True)
+    source = models.CharField(
+        max_length=20,
+        choices=[("mock", "隨機測驗"), ("chapter", "章節練習")],
+        default="mock",
+    )
 
     def __str__(self):
         who = self.user.username if self.user else f"Session-{self.session_key}"
         return f"{who} - {self.question} - {'✔' if self.is_correct else '✘'}"
+
+
+class UserProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    ROLE_CHOICES = (
+        ("admin", "管理員"),
+        ("user", "一般使用者"),
+    )
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default="user")
+
+    def __str__(self):
+        return f"{self.user.username} - {self.role}"
