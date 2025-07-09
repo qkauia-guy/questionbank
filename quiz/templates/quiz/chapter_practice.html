@@ -2,6 +2,10 @@
 {% load quiz_extras %}
 {% load markdown_deux_tags %}
 {% block content %}
+{% load static %}
+{% block extra_scripts %}
+  <script src="{% static 'js/canvas-pen.js' %}" defer></script>
+{% endblock %}
 
 <!-- ⬆️ 左上角浮出秒數 -->
 <div id="floating-timer">
@@ -136,8 +140,7 @@
   </div>
 {% endif %}
 
-
 {% include 'quiz/_overlay_canvas.html' %}
-{% include 'quiz/_search_chapter_practice.html' %}
+{% include 'quiz/_search_mock_exam.html' %}
 
 {% endblock %}

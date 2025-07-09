@@ -10,18 +10,18 @@
           <table class="table table-bordered align-middle exam-table">
             <thead class="table-light">
               <tr>
-                <th>科目</th>
-                <th>章節-題號</th>
-                <th>核對答案</th>
-                <th>作答時間</th>
-                <th>測驗模式</th>
+                <th class="text-center">科目</th>
+                <th class="text-center">章節-題號</th>
+                <th class="text-center">核對答案</th>
+                <th class="text-center">作答時間</th>
+                <th class="text-center">測驗模式</th>
               </tr>
             </thead>
             <tbody>
               {% for record in records %}
                 <tr>
-                  <td>{{ record.question.category }}</td>
-                  <td>
+                  <td class="text-center">{{ record.question.category }}</td>
+                  <td class="text-center">
                     <a href="{% url 'mock_exam' %}?chapter={{ record.question.chapter|urlencode }}&number={{ record.question.number|urlencode }}">
                       {{ record.question.chapter }} - {{ record.question.number }}
                     </a>
@@ -46,7 +46,7 @@
                       -
                     {% endif %}
                   </td>
-                  <td>
+                  <td class="text-center">
                     {% if record.source %}
                       {{ record.source }}
                     {% else %}

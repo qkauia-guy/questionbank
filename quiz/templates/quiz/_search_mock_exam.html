@@ -1,35 +1,38 @@
 <!-- ✅ 桌機專用搜尋欄（只在 md 以上顯示） -->
-<div class="mobile-hide-on-mock">
-  <form method="get" action="{% url 'mock_exam' %}" class="row g-2 d-none d-md-flex">
-    <!-- ✅ 類別 -->
-    <div class="col-4">
-      <select name="category" id="mock_category" class="form-select" onchange="handleCategoryChange()">
-        <option value="">請選擇科目</option>
-        {% for cat in categories %}
-          <option value="{{ cat }}" {% if category == cat %}selected{% endif %}>{{ cat }}</option>
-        {% endfor %}
-      </select>
-    </div>
+<!-- ✅ 桌機版搜尋區：隱藏於手機 -->
+<div class="desktop-search-toggle mobile-hide-on-mock collapsed" id="desktopSearchBox">
+  <!-- 🔘 展開／收起按鈕 -->
+  <button class="toggle-btn btn btn-sm btn-outline-primary w-100 mb-2" onclick="toggleDesktopSearch()">
+    <span id="desktopToggleIcon">▼</span> 搜尋題目
+  </button>
 
-    <!-- ✅ 章節 -->
-    <div class="col-4">
-      <select name="chapter" id="mock_chapter" class="form-select" onchange="handleChapterChange()">
-        <option value="">章節</option>
-      </select>
-    </div>
+  <!-- 🔍 可展開的搜尋表單 -->
+  <form method="get" action="{% url 'mock_exam' %}" class="search-form-body">
+  <div class="mb-2">
+    <select name="category" id="mock_category" class="form-select form-select-sm w-100" onchange="handleCategoryChange()">
+      <option value="">請選擇科目</option>
+      {% for cat in categories %}
+        <option value="{{ cat }}" {% if category == cat %}selected{% endif %}>{{ cat }}</option>
+      {% endfor %}
+    </select>
+  </div>
 
-    <!-- ✅ 題號 -->
-    <div class="col-4">
-      <select name="number" id="mock_number" class="form-select">
-        <option value="">題號</option>
-      </select>
-    </div>
+  <div class="mb-2">
+    <select name="chapter" id="mock_chapter" class="form-select form-select-sm w-100" onchange="handleChapterChange()">
+      <option value="">章節</option>
+    </select>
+  </div>
 
-    <div class="col-12 mt-2">
-      <button type="submit" class="btn btn-secondary w-100">搜尋</button>
-    </div>
-  </form>
+  <div class="mb-2">
+    <select name="number" id="mock_number" class="form-select form-select-sm w-100">
+      <option value="">題號</option>
+    </select>
+  </div>
+
+  <button type="submit" class="btn btn-sm btn-secondary w-100">搜尋</button>
+</form>
 </div>
+
 
 
 <!-- 📱 手機版搜尋區塊（含浮動按鈕與搜尋表單） -->

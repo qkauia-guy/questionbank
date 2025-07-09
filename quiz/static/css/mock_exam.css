@@ -253,6 +253,28 @@ li {
   margin-bottom: 0.5rem;
 }
 
+.desktop-search-toggle.collapsed .search-form-body {
+  display: none;
+}
+
+/* ✅ 當沒有 .collapsed class 時，顯示表單 */
+.desktop-search-toggle:not(.collapsed) .search-form-body {
+  display: block;
+}
+
+.desktop-search-toggle {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 999;
+  width: 300px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  padding: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
 /* ========== 📱 手機響應式調整 ========== */
 @media (max-width: 768px) {
   body {
@@ -371,6 +393,7 @@ li {
   }
 
   .card-body {
+    padding: 1rem;
   }
 
   .list-group-item {

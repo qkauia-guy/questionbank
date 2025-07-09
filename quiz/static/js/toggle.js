@@ -4,6 +4,14 @@ const mockSelectedCategory = "{{ category|default:'' }}";
 const mockSelectedChapter = "{{ chapter|default:'' }}";
 const mockSelectedNumber = "{{ number|default:'' }}";
 
+function toggleDesktopSearch() {
+  const box = document.getElementById("desktopSearchBox");
+  const icon = document.getElementById("desktopToggleIcon");
+
+  box.classList.toggle("collapsed");
+  icon.textContent = box.classList.contains("collapsed") ? "▼" : "▲";
+}
+
 function isMobile() {
   return window.innerWidth <= 768;
 }
