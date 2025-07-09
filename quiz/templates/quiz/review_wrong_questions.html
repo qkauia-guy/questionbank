@@ -5,12 +5,12 @@
     <div class="card my-3">
       <div class="card-header">
         <div class="text-muted small">
-          <span class="me-3">🗂 類別：{{ record.question.category }}</span>
+          <span class="me-3">🗂 科目：{{ record.question.category }}</span>
           <span class="me-3">📘 章節：{{ record.question.chapter }} - {{ record.question.number }}</span>
         </div>
       </div>
       <div class="card-body fs-6">
-        {{ record.question.question_text|safe_markdown_no_h1|safe }}
+        {{ record.question.question_text|safe_markdown_with_lang:record.question.category|safe }}
 
         <p class="mt-3 mb-2 fw-bold">所有選項：</p>
         <ul class="list-group list-group-flush">
@@ -28,7 +28,7 @@
                   {% else %}
                     ☉
                   {% endif %}
-                  <strong>{{ letter }}.</strong> {{ choice|safe_markdown_no_h1|safe }}
+                  <strong>{{ letter }}.</strong> {{ choice|safe_markdown_with_lang:record.question.category|safe }}
                 </li>
               {% endif %}
             {% endwith %}
@@ -42,7 +42,7 @@
           </button>
           <div class="collapse mt-2" id="ai-explanation-{{ forloop.counter }}">
             <div class="card card-body bg-light border small ai-explanation-card">
-              {{ record.ai_explanation|safe_markdown_no_h1|safe }}
+              {{ record.ai_explanation|safe_markdown_with_lang:record.question.category|safe }}
             </div>
           </div>
         {% endif %}

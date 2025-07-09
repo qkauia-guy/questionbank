@@ -1,10 +1,23 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
 {% load markdown_deux_tags %}
 {% load quiz_extras %}
 
-{% block title %}模擬測驗{% endblock %}
+{% block title %}
+  模擬測驗
+{% endblock %}
 
 {% block content %}
   {% include 'quiz/_question_card.html' %}
+
+  <!-- ✅ 桌機與手機版搜尋欄由 partial 控制 -->
   {% include 'quiz/_search_mock_exam.html' %}
+
+  <!-- ✅ RWD 判斷（可刪） -->
+  <p style="color:red;">
+    {% if request.user_agent.is_mobile %}
+      📱 手機模式
+    {% else %}
+      💻 桌機模式
+    {% endif %}
+  </p>
 {% endblock %}

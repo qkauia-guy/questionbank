@@ -8,9 +8,9 @@
 
 <div class="container">
   <div class="mb-3 text-muted">
-    <span class="me-3">🗂 類別：{{ question.category }}</span>
+    <span class="me-3">🗂 科目：{{ question.category }}</span>
     <span class="me-3">📘 章節：{{ question.chapter }} - {{ question.number }}</span>
-    <span>📚 題庫總數：{{ total_question_count }} 題</span>
+    <span>📚 目前 {{ question.category }} 總題數：{{ category_total }} 題</span>
   </div>
 </div>
   <!-- ⬇️ 選項 -->
@@ -20,7 +20,7 @@
       {% csrf_token %}
 
       <div class="mb-3">
-        {{ question.question_text|safe_markdown_no_h1|safe }}
+        {{ question.question_text|safe_markdown_with_lang:question.category|safe }}
         <input type="hidden" name="question_id" value="{{ question.id }}">
       </div>
 
@@ -44,7 +44,7 @@
 
       {% if question.is_fill_in %}
         <div class="mb-3">
-          <label for="fill_answer" class="form-label">請輸入程式碼：</label>
+          <label for="fill_answer" class="form-label">輸入答案：</label>
           <input type="text" class="form-control" name="fill_answer" id="fill_answer" value="">
         </div>
       {% endif %}
@@ -73,7 +73,8 @@
         {% if not result and ai_explanation %}
           <div class="explanation mt-3">
             🤖 <strong>AI 補充說明：</strong><br>
-            {{ ai_explanation|markdown|safe }}
+            {{ ai_explanation|safe_markdown_with_lang:question.category|safe }}
+
           </div>
         {% endif %}
       {% endif %}

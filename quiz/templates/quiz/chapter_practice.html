@@ -2,41 +2,73 @@
 {% load quiz_extras %}
 {% load markdown_deux_tags %}
 {% block content %}
+
 <!-- ⬆️ 左上角浮出秒數 -->
 <div id="floating-timer">
   作答時間：<span id="timer">0</span> 秒
 </div>
 
 <div class="container">
-  <div class="mb-3 text-muted">
-    <span class="me-3">🗂 類別：{{ question.category }}</span>
+  <div class="mb-3 text-muted mt-3">
+    {% if category and category != "None" %}
+      <span class="me-3">🗂 科目：{{ question.category }}</span>
+    {% endif %}
     <span class="me-3">📘 章節：{{ question.chapter }} - {{ question.number }}</span>
-    <span>📚 題庫總數：{{ total_question_count }} 題</span>
+    
   </div>
+  {% if category_total %}
+    <div class="progress mb-3 position-relative" style="height: 20px; background-color: #444;">
+      <div class="progress-bar" role="progressbar"
+          style="width: {{ current_index|add:1|div:category_total|mul:100|floatformat:0 }}%;
+                  background-color: rgba(255, 255, 255, 0.25);">
+      </div>
+      <div class="progress-label">
+        第 {{ current_index|add:1 }} 題 / 共 {{ category_total }} 題
+      </div>
+    </div>
+  {% endif %}
+</div>
 
+  {% if not category or category == "None" %}
+  <div class="alert alert-warning mt-3" role="alert">
+    ⚠️ 請先選擇科目後再開始練習。
+  </div>
+{% else %}
+  <!-- ✅ 以下是有選擇類別時才會顯示的題目卡片 -->
   <div class="question-card">
     <form method="post">
       {% csrf_token %}
       <input type="hidden" name="question_id" value="{{ question.id }}">
       <input type="hidden" name="used_time" id="used_time" value="0">
 
+      <!-- ✅ 題目 -->
       <div class="mb-3">
-        {{ question.question_text|safe_markdown_no_h1|safe }}
+        {% if question.image %}
+        <div class="mt-3">
+          <img src="{{ question.image.url }}" alt="題目附圖" style="max-width: 100%; border: 1px solid #ccc; border-radius: 8px;">
+        </div>
+        {% endif %}
+        {% if question %}
+          {{ question.question_text|safe_markdown_with_lang:question.category|safe }}
+        {% endif %}
       </div>
 
-      <!-- ✅ 單選或多選 -->
+      <!-- ✅ 選項 -->
       {% for option in "ABCDEFGH" %}
-        {% with choice=question|get_choice:option %}
+        {% with choice=question|get_choice:option category=question.category %}
           {% if choice and choice|cut:" " != "X" %}
-            <div class="form-check d-flex align-items-center gap-2 py-2 px-3 mb-3 rounded-3" style="background: linear-gradient(to right, #f0f4ff, #e6f0ff);">
+            <div class="form-check d-flex align-items-center gap-2 py-2 px-3 mb-3 rounded-3"
+                 style="background: linear-gradient(to right, #f0f4ff, #e6f0ff);">
               <input class="form-check-input mt-1"
                      type="checkbox"
                      name="selected_answer"
                      value="{{ option }}"
                      id="option_{{ option }}"
                      {% if result is none and option in selected_answer %}checked{% endif %}>
+
               <label class="form-check-label flex-grow-1" for="option_{{ option }}">
-                <strong>{{ option }}.</strong> {{ choice|markdown|safe }}
+                <strong>{{ option }}.</strong>
+                <div>{{ choice|safe_markdown_with_lang_for_options:category|safe }}</div>
               </label>
             </div>
           {% endif %}
@@ -45,11 +77,12 @@
 
       {% if question.is_fill_in %}
         <div class="mb-3">
-          <label for="fill_answer" class="form-label">請輸入程式碼：</label>
+          <label for="fill_answer" class="form-label">輸入答案：</label>
           <input type="text" class="form-control" name="fill_answer" id="fill_answer" value="{{ fill_input }}">
         </div>
       {% endif %}
 
+      <!-- ✅ 按鈕 -->
       <div class="d-flex flex-wrap gap-2 mt-3">
         <button type="submit" name="restart" class="btn btn-outline-danger">重頭開始</button>
         <button type="submit" name="prev" class="btn btn-outline-secondary">上一題</button>
@@ -57,7 +90,8 @@
         <button type="submit" class="btn btn-primary">送出</button>
       </div>
     </form>
-    <!-- ✅ 把這段放在 form 外！不是 form 裡！ -->
+
+    <!-- ✅ 答案結果 Modal -->
     {% if result is not None %}
       <div class="modal fade" id="resultModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -76,12 +110,11 @@
               {% if not result and ai_explanation %}
                 <div class="mt-3">
                   🤖 <strong>AI 補充說明：</strong><br>
-                  {{ ai_explanation|safe_markdown_no_h1|safe }}
+                  {{ ai_explanation|safe_markdown_ai|safe }}
                 </div>
               {% endif %}
             </div>
             <div class="modal-footer">
-              <!-- 注意：還是在 form 裡觸發 submit -->
               <form method="post">
                 {% csrf_token %}
                 <input type="hidden" name="question_id" value="{{ question.id }}">
@@ -92,17 +125,19 @@
         </div>
       </div>
 
-      <!-- 顯示 Modal -->
+      <!-- ✅ 顯示 Modal 的 JS -->
       <script>
         document.addEventListener("DOMContentLoaded", function () {
           var resultModal = new bootstrap.Modal(document.getElementById('resultModal'));
           resultModal.show();
         });
       </script>
-      {% endif %}
+    {% endif %}
   </div>
-</div>
+{% endif %}
+
 
 {% include 'quiz/_overlay_canvas.html' %}
 {% include 'quiz/_search_chapter_practice.html' %}
+
 {% endblock %}

@@ -15,29 +15,11 @@
 
     <!-- ✅ 自訂樣式 -->
     <link rel="stylesheet" href="{% static 'css/mock_exam.css' %}">
-    
+
     {% block extra_css %}{% endblock %}
-
-    <!-- ✅ JavaScript 檔案引入 -->
-    <script src="{% static 'js/toggle.js' %}" defer></script>
-    <script src="{% static 'js/mobile_toggle.js' %}" defer></script>
-    <script src="{% static 'js/mock_exam.js' %}" defer></script>
-    <script src="{% static 'js/floating_timer.js' %}" defer></script>
-    <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
-
-    <!-- ✅ 程式碼高亮初始化 -->
-    <script defer>
-      document.addEventListener("DOMContentLoaded", function () {
-        hljs.highlightAll();
-      });
-    </script>
-
-    {% block extra_head %}{% endblock %}
   </head>
 
   <body>
-    <!-- ✅ 導覽列 -->
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
       <div class="container-fluid">
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -74,15 +56,13 @@
       </div>
     </nav>
 
-
-
     <!-- ✅ 功能列 -->
     <div class="container mt-3">
       <!-- 類別選擇 -->
       <div class="row mb-3">
         <div class="col-12 col-md-auto">
-          <form method="get" action="" class="d-flex align-items-center gap-2 flex-wrap">
-            <label for="category" class="mb-0">類別</label>
+          <form method="get" action="" class="d-flex align-items-center gap-2 flex-wrap mx-1">
+            <label for="category" class="mb-0">選擇科目</label>
             <select name="category" id="category" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
               <option value="">全部</option>
               {% for c in categories %}
@@ -117,13 +97,34 @@
           </a>
         </div>
       </div>
-
     </div>
+    
 
-
-    <!-- ✅ 主要內容 -->
-    <main class="container my-4">
+    <!-- ✅ 主要內容區塊 -->
+    <main class="container my-auto">
       {% block content %}{% endblock %}
+      {% if request.user_agent.is_mobile %}
+        <script src="{% static 'js/mobile_toggle.js' %}"></script>
+      {% else %}
+        <script src="{% static 'js/toggle.js' %}" defer></script>
+      {% endif %}
     </main>
+
+    <!-- ✅ highlight.js 主程式與語言模組 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/sql.min.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        hljs.highlightAll();
+      });
+    </script>
+    
+    <!-- ✅ JavaScript 檔案引入 -->
+
+    <script src="{% static 'js/floating_timer.js' %}" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
+    
+
+    {% block extra_head %}{% endblock %}
   </body>
 </html>

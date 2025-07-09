@@ -9,7 +9,7 @@ from django.utils.timezone import localtime
 from .models import Question, QuestionRecord
 from django.urls import reverse
 from urllib.parse import urlencode
-
+from django.http import JsonResponse
 
 # ========== 工具函式 ==========
 
@@ -38,12 +38,72 @@ def sort_key(val):
         return (float("inf"), float("inf"))
 
 
-def get_ai_feedback_ollama(question_text, user_ans, correct_ans):
-    prompt = f"""
-這是一題選擇題，請幫我解釋這題的答案為什麼不是「{user_ans}」，而是「{correct_ans}」，內容如下：
+def get_chapters_by_category(request):
+    category = request.GET.get("category")
+    chapters = list(
+        Question.objects.filter(category=category)
+        .values_list("chapter", flat=True)
+        .distinct()
+    )
+    return JsonResponse({"chapters": chapters})
 
+
+# def get_ai_feedback_ollama(question_text, user_ans, correct_ans, category=None):
+#     category_line = f"這題的範圍是「{category}」\n" if category else ""
+
+#     prompt = f"""
+#     這是一題選擇題，請幫我解釋這題的答案為什麼不是「{user_ans}」，而是「{correct_ans}」。
+#     {category_line}內容如下：
+
+#     {question_text}
+#     """
+#     try:
+#         response = requests.post(
+#             "http://localhost:11434/api/generate",
+#             json={"model": "qwen2.5-coder:3b", "prompt": prompt, "stream": False},
+#             timeout=90,
+#         )
+#         data = response.json()
+#         return data.get("response", "⚠️ AI 沒有回應。")
+#     except Exception as e:
+#         return f"⚠️ AI 請求錯誤：{e}"
+
+
+def get_ai_feedback_ollama(
+    question_text, user_ans, correct_ans, question=None, category=None, options=""
+):
+    """
+    :param question_text: 題目內容（純題幹）
+    :param user_ans: 使用者作答，例如 "B"、"AC"
+    :param correct_ans: 正確答案，例如 "C"
+    :param question: Question 物件（選填，用來提取選項）
+    :param category: 題目類別（例如 "Python"、"AI"）
+    """
+    # 👉 類別描述行
+    category_line = (
+        f"這題的範圍是「{category or getattr(question, 'category', '')}」\n"
+        if (category or question)
+        else ""
+    )
+
+    # 👉 整理選項文字
+    choices_text = ""
+    if question:
+        for letter in "ABCDEFGH":
+            choice_text = getattr(question, f"choice_{letter.lower()}", "").strip()
+            if choice_text and choice_text.upper() != "X":
+                choices_text += f"{letter}. {choice_text}\n"
+
+    # 👉 組合 prompt 給 AI
+    prompt = f"""這是一題選擇題，請幫我解釋為什麼答案不是「{user_ans}」，而是「{correct_ans}」。
+{category_line}
+題目如下：
 {question_text}
-"""
+
+選項如下：
+{options}
+""".strip()
+
     try:
         response = requests.post(
             "http://localhost:11434/api/generate",
@@ -92,17 +152,12 @@ def select_category(request):
 def get_numbers_by_chapter(request):
     category = request.GET.get("category")
     chapter = request.GET.get("chapter")
-
-    questions = Question.objects.all()
-    if category:
-        questions = questions.filter(category=category)
-    if chapter:
-        questions = questions.filter(chapter=chapter)
-
-    numbers = questions.values_list("number", flat=True).distinct()
-    sorted_numbers = sorted(numbers, key=sort_key)
-
-    return JsonResponse({"numbers": sorted_numbers})
+    numbers = list(
+        Question.objects.filter(category=category, chapter=chapter)
+        .values_list("number", flat=True)
+        .distinct()
+    )
+    return JsonResponse({"numbers": numbers})
 
 
 # ========== 練習與模擬測驗 ==========
@@ -114,6 +169,13 @@ def mock_exam(request):
     chapter = request.GET.get("chapter")
     number = request.GET.get("number")
 
+    if category == "None":
+        category = None
+    if chapter == "None":
+        chapter = None
+    if number == "None":
+        number = None
+
     result = None
     correct_answer = None
     explanation = None
@@ -121,6 +183,30 @@ def mock_exam(request):
     ai_explanation = None
     fill_input = ""
 
+    questions = Question.objects.order_by("chapter", "number_order")
+    if category:
+        questions = questions.filter(category=category)
+    if chapter:
+        questions = questions.filter(chapter=chapter)
+    if number:
+        questions = questions.filter(number=number)
+
+    total = questions.count()
+    category_total = (
+        Question.objects.filter(category=category).count() if category else 0
+    )
+    if total == 0:
+        return render(
+            request,
+            "quiz/chapter_practice.html",
+            {
+                "no_question": True,
+                "category": category,
+                "chapter": chapter,
+                "number": number,
+                "category_total": category_total,
+            },
+        )
     # 保留 query string 參數
     query_params = urlencode(
         {
@@ -188,11 +274,25 @@ def mock_exam(request):
         result = check_answer(question, selected_answer, fill_input)
 
         if not result:
-            ai_explanation = get_ai_feedback_ollama(
-                question.question_text,
-                fill_input if question.is_fill_in else "".join(selected_answer),
-                correct_answer,
-            )
+            if question.image:
+                ai_explanation = question.explanation
+            else:
+                # ✅ 組合 options_text，避免未定義錯誤
+                options_text = ""
+                for letter in "ABCDEFGH":
+                    choice = getattr(question, f"choice_{letter.lower()}", "").strip()
+                    if choice and choice.upper() != "X":
+                        options_text += f"{letter}. {choice}\n"
+
+                ai_explanation = get_ai_feedback_ollama(
+                    question_text=question.question_text,
+                    user_ans=(
+                        fill_input if question.is_fill_in else "".join(selected_answer)
+                    ),
+                    correct_ans=correct_answer,
+                    question=question.category,
+                    options=options_text,  # ✅ 傳組合好的選項文字
+                )
 
         if request.user.is_authenticated:
             QuestionRecord.objects.create(
@@ -210,14 +310,23 @@ def mock_exam(request):
         question = random.choice(questions)
 
     # 準備下拉資料
+    categories = Question.objects.values_list("category", flat=True).distinct()
+
+    # 類別對應章節
     chapter_list = (
         Question.objects.filter(category=category)
         .values_list("chapter", flat=True)
         .distinct()
+        if category
+        else []
     )
+
+    # ⬇️ 計算目前章節（優先用 GET 傳入，其次從題目抓）
     current_chapter = chapter or getattr(question, "chapter", None)
+
+    # 題號下拉選單：需同時指定 category + chapter，才會有對應題號
     number_list = []
-    if current_chapter:
+    if category and current_chapter:
         raw_numbers = (
             Question.objects.filter(category=category, chapter=current_chapter)
             .values_list("number", flat=True)
@@ -225,7 +334,10 @@ def mock_exam(request):
         )
         number_list = sorted(raw_numbers, key=sort_key)
 
-    categories = Question.objects.values_list("category", flat=True).distinct()
+    # ⬇️ 取得該類別總題數
+    category_total = (
+        Question.objects.filter(category=category).count() if category else 0
+    )
 
     return render(
         request,
@@ -245,6 +357,7 @@ def mock_exam(request):
             "fill_input": fill_input,
             "categories": categories,
             "current_category": category,
+            "category_total": category_total,
         },
     )
 
@@ -261,6 +374,12 @@ def chapter_practice(request):
     category = request.GET.get("category")
     chapter = request.GET.get("chapter")
     number = request.GET.get("number")
+    if category == "None":
+        category = None
+    if chapter == "None":
+        chapter = None
+    if number == "None":
+        number = None
 
     questions = Question.objects.order_by("chapter", "number_order")
     if category:
@@ -271,6 +390,9 @@ def chapter_practice(request):
         questions = questions.filter(number=number)
 
     total = questions.count()
+    category_total = (
+        Question.objects.filter(category=category).count() if category else 0
+    )
     if total == 0:
         return render(
             request,
@@ -280,6 +402,8 @@ def chapter_practice(request):
                 "category": category,
                 "chapter": chapter,
                 "number": number,
+                "category_total": category_total,
+                "question": None,
             },
         )
 
@@ -326,23 +450,37 @@ def chapter_practice(request):
         correct_answer = question.answer
 
         if not result:
-            ai_explanation = get_ai_feedback_ollama(
-                question.question_text,
-                fill_input if question.is_fill_in else "".join(selected_answer),
-                correct_answer,
-            )
+            if question.image:
+                ai_explanation = question.explanation
+            else:
+                options_text = ""
+                for letter in "ABCDEFGH":
+                    choice = getattr(question, f"choice_{letter.lower()}", None)
+                    if choice and choice != "X":
+                        options_text += f"{letter}. {choice}\n"
 
-        QuestionRecord.objects.create(
-            user=request.user,
-            question=question,
-            is_correct=result,
-            selected_answer=(
-                fill_input if question.is_fill_in else "".join(selected_answer)
-            ),
-            used_time=used_time,
-            ai_explanation=ai_explanation,
-            source="chapter",
-        )
+                ai_explanation = get_ai_feedback_ollama(
+                    question_text=question.question_text,
+                    user_ans=(
+                        fill_input if question.is_fill_in else "".join(selected_answer)
+                    ),
+                    correct_ans=correct_answer,
+                    question=question.category,
+                    options=options_text,  # ✅ 加這行
+                )
+
+        if request.user.is_authenticated:
+            QuestionRecord.objects.create(
+                user=request.user,
+                question=question,
+                is_correct=result,
+                selected_answer=(
+                    fill_input if question.is_fill_in else "".join(selected_answer)
+                ),
+                used_time=used_time,
+                ai_explanation=ai_explanation if not result else None,
+                source="mock",
+            )
 
     # 傳遞下拉選單資料
     chapter_list = (
@@ -350,13 +488,15 @@ def chapter_practice(request):
         .values_list("chapter", flat=True)
         .distinct()
     )
-    number_list = (
-        Question.objects.filter(category=category, chapter=chapter)
-        .values_list("number", flat=True)
-        .distinct()
-        if chapter
-        else []
-    )
+    if category and chapter:
+        number_list = (
+            Question.objects.filter(category=category, chapter=chapter)
+            .values_list("number", flat=True)
+            .distinct()
+        )
+    else:
+        number_list = []
+
     categories = Question.objects.values_list("category", flat=True).distinct()
 
     return render(
@@ -378,6 +518,7 @@ def chapter_practice(request):
             "category": category,
             "chapter": chapter,
             "number": number,
+            "category_total": category_total,
         },
     )
 

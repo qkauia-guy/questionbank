@@ -1,81 +1,72 @@
-<!-- ✅ 桌機版（固定右上） -->
-<div class="fixed-search-bar collapsed" id="searchBar">
-  <button class="toggle-btn btn btn-sm btn-outline-primary" onclick="toggleSearchBar()">
-    <span id="toggleIcon">▼</span> 搜尋題目
-  </button>
+<!-- ✅ 桌機專用搜尋欄（只在 md 以上顯示） -->
+<div class="mobile-hide-on-mock">
+  <form method="get" action="{% url 'mock_exam' %}" class="row g-2 d-none d-md-flex">
+    <!-- ✅ 類別 -->
+    <div class="col-4">
+      <select name="category" id="mock_category" class="form-select" onchange="handleCategoryChange()">
+        <option value="">請選擇科目</option>
+        {% for cat in categories %}
+          <option value="{{ cat }}" {% if category == cat %}selected{% endif %}>{{ cat }}</option>
+        {% endfor %}
+      </select>
+    </div>
 
-  <form method="get" action="{% url 'mock_exam' %}" class="row g-2 mt-2 px-2">
-    <div class="col-6">
-      <select name="chapter" id="chapter" class="form-select form-select-sm" onchange="fetchNumbers()">
+    <!-- ✅ 章節 -->
+    <div class="col-4">
+      <select name="chapter" id="mock_chapter" class="form-select" onchange="handleChapterChange()">
         <option value="">章節</option>
-        {% for ch in chapter_list %}
-          <option value="{{ ch }}" {% if category == ch %}selected{% endif %}>{{ ch }}</option>
-        {% endfor %}
       </select>
     </div>
 
-    <div class="col-6">
-      <select name="number" id="number" class="form-select form-select-sm">
+    <!-- ✅ 題號 -->
+    <div class="col-4">
+      <select name="number" id="mock_number" class="form-select">
         <option value="">題號</option>
-        {% for num in number_list %}
-          <option value="{{ num }}" {% if number == num %}selected{% endif %}>{{ num }}</option>
-        {% endfor %}
       </select>
     </div>
 
-    <div class="col-12">
-      <button type="submit" class="btn btn-sm btn-secondary w-100">搜尋</button>
+    <div class="col-12 mt-2">
+      <button type="submit" class="btn btn-secondary w-100">搜尋</button>
     </div>
   </form>
 </div>
 
-<script>
-  function fetchNumbers() {
-    const chapterSelect = document.getElementById("chapter");
-    const selectedChapter = chapterSelect.value;
 
-    fetch(`/get_numbers/?chapter=${selectedChapter}`)
-      .then(response => response.json())
-      .then(data => {
-        const numberSelect = document.getElementById("number");
-        numberSelect.innerHTML = '<option value="">題號</option>';
-        data.numbers.forEach(num => {
-          const option = document.createElement("option");
-          option.value = num;
-          option.textContent = num;
-          numberSelect.appendChild(option);
-        });
-      })
-      .catch(error => {
-        console.error("取得題號失敗：", error);
-      });
-  }
-</script>
+<!-- 📱 手機版搜尋區塊（含浮動按鈕與搜尋表單） -->
+<div class="d-md-none position-relative">
+  <!-- 🔍 浮動按鈕 -->
+  <div class="search-fab">🔍</div>
 
-<!-- 📱 手機版（浮動搜尋按鈕與下拉選單） -->
-<div class="d-md-none">
-  <div class="search-fab" onclick="toggleSearchBarMock()">🔍</div>
-  <div id="mobileSearchBar-mock" class="mobile-search shadow">
-    <form method="get" action="{% url 'mock_exam' %}" class="p-3">
-      <div class="mb-2">
-        <select name="chapter" id="chapter_mobile" class="form-select form-select-sm" onchange="fetchNumbersMobile()">
+  <!-- 🔽 手機搜尋欄 -->
+  <div id="mobileSearchBar" class="mobile-search mt-2">
+    <form method="get" action="{% url 'mock_exam' %}" class="row g-2 px-2">
+      <!-- 類別 -->
+      <div class="col-12">
+        <select id="category_select" name="category" class="form-select form-select-sm">
+          <option value="">請選擇科目</option>
+          {% for cat in categories %}
+            <option value="{{ cat }}" {% if category == cat %}selected{% endif %}>{{ cat }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- 章節 -->
+      <div class="col-6">
+        <select id="chapter_select" name="chapter" class="form-select form-select-sm">
           <option value="">章節</option>
-          {% for ch in chapter_list %}
-            <option value="{{ ch }}" {% if category == ch %}selected{% endif %}>{{ ch }}</option>
-          {% endfor %}
         </select>
       </div>
 
-      <div class="mb-2">
-        <select name="number" id="number_mobile" class="form-select form-select-sm">
+      <!-- 題號 -->
+      <div class="col-6">
+        <select id="number_select" name="number" class="form-select form-select-sm">
           <option value="">題號</option>
-          {% for num in number_list %}
-            <option value="{{ num }}" {% if number == num %}selected{% endif %}>{{ num }}</option>
-          {% endfor %}
         </select>
       </div>
 
-      <button type="submit" class="btn btn-sm btn-secondary w-100">搜尋</button>
+      <div class="col-12">
+        <button type="submit" class="btn btn-secondary btn-sm w-100">搜尋</button>
+      </div>
     </form>
   </div>
 </div>

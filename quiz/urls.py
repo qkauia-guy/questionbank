@@ -9,4 +9,14 @@ urlpatterns = [
     path("history/", views.exam_history, name="exam_history"),
     path("practice/", views.chapter_practice, name="chapter_practice"),
     path("question/<int:pk>/", views.question_detail, name="question_detail"),
+    path(
+        "get_chapters_by_category/",
+        views.get_chapters_by_category,
+        name="get_chapters_by_category",
+    ),
+    path(
+        "get_numbers_by_chapter/",
+        views.get_numbers_by_chapter,
+        name="get_numbers_by_chapter",
+    ),
 ]

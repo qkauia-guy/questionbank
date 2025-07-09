@@ -1,10 +1,23 @@
-/* ========== 通用樣式 ========== */
+/* ========== 📘 通用樣式 ========== */
+/* Markdown 標題樣式縮小 */
+html body .markdown-content h1,
+html body .markdown-content h2,
+html body .markdown-content h3 {
+  font-size: 1rem !important;
+  font-weight: bold;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+}
+
+/* 頁面整體樣式 */
 body {
   padding: 40px;
   background: #f9f9f9;
   color: #333;
 }
 
+/* 題目卡片區塊 */
 .question-card {
   background: #ffffff;
   border-radius: 12px;
@@ -13,6 +26,7 @@ body {
   margin-bottom: 25px;
 }
 
+/* 表單選項卡 */
 .form-check {
   display: flex;
   align-items: center;
@@ -44,7 +58,7 @@ body {
   color: #0d6efd;
 }
 
-/* ========== 表格樣式 ========== */
+/* ========== 📊 表格樣式 ========== */
 table {
   border-collapse: collapse;
   width: 100%;
@@ -68,13 +82,13 @@ th, td {
   text-decoration: underline !important;
 }
 
-/* ========== 狀態色彩 ========== */
+/* ========== ✅ 狀態文字色彩 ========== */
 .text-correct    { color: #28a745 !important; font-weight: bold; }
 .text-wrong      { color: #dc3545 !important; font-weight: bold; }
 .text-slow       { color: #fd7e14 !important; font-weight: bold; }
 .text-very-slow  { color: #dc3545 !important; font-weight: bold; }
 
-/* ========== 答案解析區 ========== */
+/* ========== 🧠 答案解析區塊 ========== */
 .explanation {
   background: #fff9e6;
   border-left: 6px solid #ffcc00;
@@ -83,7 +97,7 @@ th, td {
   border-radius: 8px;
 }
 
-/* ========== Markdown 程式碼區塊 ========== */
+/* ========== 💻 Markdown 程式碼樣式 ========== */
 pre {
   white-space: pre-wrap;
   word-wrap: break-word;
@@ -108,7 +122,7 @@ pre:hover, code:hover {
   background-color: #e9efff;
 }
 
-/* ========== 搜尋欄 ========== */
+/* ========== 🔍 固定搜尋欄樣式 ========== */
 .fixed-search-bar {
   position: fixed;
   top: 20px;
@@ -137,7 +151,7 @@ pre:hover, code:hover {
   margin-bottom: 8px;
 }
 
-/* ========== 畫布區塊 ========== */
+/* ========== 🎨 畫筆控制區 ========== */
 #overlayCanvas {
   position: fixed;
   top: 0;
@@ -166,7 +180,7 @@ pre:hover, code:hover {
   margin-left: 6px;
 }
 
-/* ========== 計時器樣式 ========== */
+/* ========== ⏱ 計時器提示樣式 ========== */
 #floating-timer {
   position: fixed;
   top: 200px;
@@ -182,12 +196,52 @@ pre:hover, code:hover {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
+/* 計時器：提醒階段（黃） */
+#floating-timer.reminder-warning {
+  background: rgba(255, 179, 0, 0.3) !important;
+  color: #b36b00 !important;
+  border-color: #ffb300 !important;
+}
+
+/* 計時器：超時階段（紅） */
+#floating-timer.reminder-danger {
+  background: #ffe6e6 !important;
+  color: #ff0000 !important;
+  border-color: #ff0000 !important;
+}
+
+/* 錯誤答案背景提示 */
 .wrong-answer {
   background-color: #db0450 !important;
   color: #fff;
 }
 
-/* ========== 列表樣式 ========== */
+/* ========== ✅ 進度條樣式 ========== */
+.progress {
+  background-color: #444; /* 深灰底 */
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-bar {
+  background-color: rgba(255, 255, 255, 0.2);  /* 半透明白色進度 */
+  transition: width 0.4s ease;
+}
+
+.progress-label {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-weight: bold;
+  font-size: 14px;
+  z-index: 1;
+  white-space: nowrap;
+}
+
+/* ========== 🔢 列表樣式 ========== */
 ul {
   padding-left: 1.5rem;
   margin-bottom: 1rem;
@@ -205,21 +259,21 @@ li {
     padding: 0px;
   }
 
-  /* 🔍 桌機搜尋欄隱藏，手機用浮動球+彈出 */
-  .fixed-search-bar {
+  #mobileSearchBar {
+    display: none;
+  }
+
+  #mobileSearchBar.show {
+    display: block;
+  }
+
+  .mobile-hide-on-mock {
     display: none !important;
   }
 
-  .toggle-btn {
-    font-size: 14px;
-  }
-
-  /* ✅ 題目卡片調整 */
   .question-card {
     width: 100vw;
-    margin-left: -10px;
-    margin-right: -10px;
-    padding: 12px;
+    padding: 10px;
     border-radius: 6px;
   }
 
@@ -233,7 +287,6 @@ li {
     font-size: 14px;
   }
 
-  /* ⏱ 計時器位置 */
   #floating-timer {
     top: 28px;
     left: auto;
@@ -243,12 +296,10 @@ li {
     font-size: 12px;
   }
 
-  /* 🖌 隱藏畫筆 */
   .canvas-controls {
     display: none !important;
   }
 
-  /* 📋 表格與按鈕 */
   table {
     font-size: 14px;
   }
@@ -261,7 +312,6 @@ li {
     margin-right: 8px;
   }
 
-  /* 📄 程式碼區塊 */
   pre {
     font-size: 11px;
     line-height: 1.5;
@@ -271,7 +321,6 @@ li {
     font-size: 0.85em;
   }
 
-  /* 📱 搜尋小球 */
   .search-fab {
     position: fixed;
     bottom: 30px;
@@ -289,7 +338,6 @@ li {
     box-shadow: 0 4px 10px rgba(0,0,0,0.3);
   }
 
-  /* 📱 搜尋表單 (初始隱藏) */
   .mobile-search {
     display: none;
     position: fixed;
@@ -304,8 +352,7 @@ li {
     box-shadow: 0 4px 8px rgba(0,0,0,0.2);
   }
 
-  /* 📱 展開狀態 */
-  .mobile-search.active {
+  .mobile-search.show {
     display: block;
   }
 
@@ -324,7 +371,6 @@ li {
   }
 
   .card-body {
-    padding: 1rem;
   }
 
   .list-group-item {
@@ -340,7 +386,7 @@ li {
   .exam-table td {
     font-size: 13px;
     padding: 8px;
-    white-space: nowrap;  /* 防止換行 */
+    white-space: nowrap;
   }
 
   .exam-table a {
@@ -353,16 +399,28 @@ li {
 
   .ai-explanation-card {
     width: 100%;
-    margin: 0; /* 避免水平偏移 */
+    margin: 0;
     padding: 1rem;
     font-size: 14px;
-    box-sizing: border-box; /* 包含 padding，不超出 */
+    box-sizing: border-box;
     border-radius: 10px;
-    overflow-wrap: break-word; /* 長字不要超出 */
+    overflow-wrap: break-word;
   }
 
-  /* 確保 collapse 不亂縮 */
   .collapse {
     width: 100%;
+  }
+
+  pre {
+    font-size: 12px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-x: auto;
+  }
+
+  code {
+    font-size: 0.85em;
+    word-break: break-word;
   }
 }
