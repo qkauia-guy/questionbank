@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from . import views as quiz_views
 
 urlpatterns = [
     path("", views.chapter_practice, name="chapter_practice"),
@@ -19,4 +20,8 @@ urlpatterns = [
         views.get_numbers_by_chapter,
         name="get_numbers_by_chapter",
     ),
+    path("toggle-ollama", views.toggle_ollama, name="toggle_ollama"),
+    path("clear-ollama-notice", views.clear_ollama_notice, name="clear_ollama_notice"),
+    path("set-ollama-model", views.set_ollama_model, name="set_ollama_model"),
+    path("accounts/register/", quiz_views.register, name="register"),
 ]

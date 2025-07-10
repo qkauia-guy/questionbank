@@ -10,6 +10,7 @@ from .models import Question, QuestionRecord
 from django.urls import reverse
 from urllib.parse import urlencode
 from django.http import JsonResponse
+from django.views.decorators.http import require_GET
 
 # ========== 工具函式 ==========
 
@@ -25,6 +26,45 @@ def check_answer(question, selected_answer, fill_input):
             if question.require_order
             else sorted(user_ans) == sorted(correct_answer)
         )
+
+
+def shuffle_choice_values(question):
+    import random
+
+    answer_letters = question.answer.strip().upper()
+    if not answer_letters or not answer_letters[0].isalpha():
+        raise ValueError(f"❌ 無效的答案格式：{question.answer}")
+
+    first_letter = answer_letters[0]
+    correct_content = getattr(question, f"choice_{first_letter.lower()}", None)
+
+    if not correct_content:
+        raise AttributeError(f"❌ 找不到欄位：choice_{first_letter.lower()}")
+
+    # 建立選項對應表
+    choices = {
+        "A": question.choice_a,
+        "B": question.choice_b,
+        "C": question.choice_c,
+        "D": question.choice_d,
+    }
+
+    # 過濾掉為空或為 "X" 的選項
+    valid_choices = {k: v for k, v in choices.items() if v and v.strip() != "X"}
+
+    items = list(valid_choices.items())
+    random.shuffle(items)
+
+    # 重新編號，回傳混洗後的新選項與新答案
+    shuffled = {}
+    new_answer = ""
+    for idx, (old_letter, content) in enumerate(items):
+        new_letter = chr(ord("A") + idx)
+        shuffled[new_letter] = content
+        if old_letter == first_letter:
+            new_answer = new_letter
+
+    return shuffled, new_answer
 
 
 def sort_key(val):
@@ -70,32 +110,42 @@ def get_chapters_by_category(request):
 
 
 def get_ai_feedback_ollama(
-    question_text, user_ans, correct_ans, question=None, category=None, options=""
+    question_text,
+    user_ans,
+    correct_ans,
+    question=None,
+    category=None,
+    options="",
+    model_name="qwen2.5-coder:3b",  # 預設使用此模型
 ):
     """
-    :param question_text: 題目內容（純題幹）
-    :param user_ans: 使用者作答，例如 "B"、"AC"
-    :param correct_ans: 正確答案，例如 "C"
-    :param question: Question 物件（選填，用來提取選項）
-    :param category: 題目類別（例如 "Python"、"AI"）
+    :param question_text: 題目內容
+    :param user_ans: 使用者的答案，例如 "B" 或 "AC"
+    :param correct_ans: 正確答案
+    :param question: Question 物件（可選，用來提取選項）
+    :param category: 題目類別（可選）
+    :param options: 若有自定義選項內容（例如隨機順序後），可傳入
+    :param model_name: 使用者選取的 Ollama 模型名稱（預設為 qwen2.5-coder:3b）
     """
-    # 👉 類別描述行
+
+    # 類別說明（若有提供）
     category_line = (
         f"這題的範圍是「{category or getattr(question, 'category', '')}」\n"
         if (category or question)
         else ""
     )
 
-    # 👉 整理選項文字
-    choices_text = ""
-    if question:
+    # 自動擷取選項（若未手動傳入）
+    if not options and question:
         for letter in "ABCDEFGH":
             choice_text = getattr(question, f"choice_{letter.lower()}", "").strip()
             if choice_text and choice_text.upper() != "X":
-                choices_text += f"{letter}. {choice_text}\n"
+                options += f"{letter}. {choice_text}\n"
 
-    # 👉 組合 prompt 給 AI
-    prompt = f"""這是一題選擇題，請幫我解釋為什麼答案不是「{user_ans}」，而是「{correct_ans}」。
+    # 組合 prompt
+    prompt = prompt = (
+        f"""請使用繁體中文回答。
+這是一題選擇題，請幫我解釋為什麼答案不是「{user_ans}」，而是「{correct_ans}」。
 {category_line}
 題目如下：
 {question_text}
@@ -103,31 +153,22 @@ def get_ai_feedback_ollama(
 選項如下：
 {options}
 """.strip()
+    )
 
     try:
         response = requests.post(
             "http://localhost:11434/api/generate",
-            json={"model": "qwen2.5-coder:3b", "prompt": prompt, "stream": False},
+            json={
+                "model": model_name,
+                "prompt": prompt,
+                "stream": False,
+            },
             timeout=90,
         )
         data = response.json()
-        return data.get("response", "⚠️ AI 沒有回應。")
+        return f"🤖 本次回答由「{model_name}」模型生成：\n\n{data.get('response', '⚠️ AI 沒有回應。')}"
     except Exception as e:
         return f"⚠️ AI 請求錯誤：{e}"
-
-
-# ========== 註冊視圖 ==========
-
-
-def register(request):
-    if request.method == "POST":
-        form = UserCreationForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect("login")
-    else:
-        form = UserCreationForm()
-    return render(request, "registration/register.html", {"form": form})
 
 
 # ========== 題目視圖 ==========
@@ -176,12 +217,14 @@ def mock_exam(request):
     if number == "None":
         number = None
 
+    ollama_enabled = request.session.get("ollama_enabled", True)
     result = None
     correct_answer = None
     explanation = None
     selected_answer = []
     ai_explanation = None
     fill_input = ""
+    model_name = request.session.get("ollama_model", "qwen2.5-coder:3b")
 
     questions = Question.objects.order_by("chapter", "number_order")
     if category:
@@ -207,7 +250,7 @@ def mock_exam(request):
                 "category_total": category_total,
             },
         )
-    # 保留 query string 參數
+
     query_params = urlencode(
         {
             "category": category or "",
@@ -217,72 +260,37 @@ def mock_exam(request):
     )
     redirect_url = f"{reverse('mock_exam')}?{query_params}"
 
-    # 題目過濾條件
-    questions = Question.objects.all()
-    if category:
-        questions = questions.filter(category=category)
-    if chapter:
-        questions = questions.filter(chapter=chapter)
-    if number:
-        questions = questions.filter(number=number)
-
-    # 沒有題目時返回錯誤畫面
-    if not questions.exists():
-        chapter_list = (
-            Question.objects.filter(category=category)
-            .values_list("chapter", flat=True)
-            .distinct()
-        )
-        number_list = (
-            Question.objects.filter(category=category, chapter=chapter)
-            .values_list("number", flat=True)
-            .distinct()
-            if chapter
-            else []
-        )
-        categories = Question.objects.values_list("category", flat=True).distinct()
-        return render(
-            request,
-            "quiz/mock_exam.html",
-            {
-                "no_question": True,
-                "chapter_list": chapter_list,
-                "number_list": number_list,
-                "category": category,
-                "chapter": chapter,
-                "number": number,
-                "categories": categories,
-                "current_category": category,
-            },
-        )
-
-    # 點了「下一題或跳過」
     if request.method == "POST" and ("next" in request.POST or "skip" in request.POST):
         return redirect(redirect_url)
 
-    # 有送出答案
     if request.method == "POST":
         question_id = request.POST.get("question_id")
         question = get_object_or_404(Question, id=question_id)
+
+        # ✅ 使用 session 中記錄的選項與正解
+        shuffled_choices = request.session.get("shuffled_choices")
+        correct_answer = request.session.get("correct_answer")
+
+        if not question.is_fill_in and correct_answer:
+            question.answer = correct_answer
 
         selected_answer = request.POST.getlist("selected_answer")
         fill_input = request.POST.get("fill_answer", "").strip()
         used_time = int(request.POST.get("used_time", 0))
 
-        correct_answer = question.answer.upper()
         explanation = question.explanation
         result = check_answer(question, selected_answer, fill_input)
 
         if not result:
             if question.image:
                 ai_explanation = question.explanation
-            else:
-                # ✅ 組合 options_text，避免未定義錯誤
+            elif ollama_enabled:  # ✅ 判斷是否開啟 AI
                 options_text = ""
-                for letter in "ABCDEFGH":
-                    choice = getattr(question, f"choice_{letter.lower()}", "").strip()
-                    if choice and choice.upper() != "X":
-                        options_text += f"{letter}. {choice}\n"
+                if shuffled_choices:
+                    for letter in "ABCDEFGH":
+                        val = shuffled_choices.get(letter)
+                        if val and val.upper() != "X":
+                            options_text += f"{letter}. {val}\n"
 
                 ai_explanation = get_ai_feedback_ollama(
                     question_text=question.question_text,
@@ -291,7 +299,8 @@ def mock_exam(request):
                     ),
                     correct_ans=correct_answer,
                     question=question.category,
-                    options=options_text,  # ✅ 傳組合好的選項文字
+                    options=options_text,
+                    model_name=model_name,
                 )
 
         if request.user.is_authenticated:
@@ -308,11 +317,18 @@ def mock_exam(request):
             )
     else:
         question = random.choice(questions)
+        if not question.is_fill_in:
+            shuffled_choices, new_answer = shuffle_choice_values(question)
+            request.session["shuffled_choices"] = shuffled_choices
+            request.session["correct_answer"] = new_answer
+            question.answer = new_answer
+        else:
+            shuffled_choices = None
+            request.session["shuffled_choices"] = None
+            request.session["correct_answer"] = question.fill_answer
 
-    # 準備下拉資料
+    # 👇 下拉選單資料處理
     categories = Question.objects.values_list("category", flat=True).distinct()
-
-    # 類別對應章節
     chapter_list = (
         Question.objects.filter(category=category)
         .values_list("chapter", flat=True)
@@ -320,11 +336,7 @@ def mock_exam(request):
         if category
         else []
     )
-
-    # ⬇️ 計算目前章節（優先用 GET 傳入，其次從題目抓）
     current_chapter = chapter or getattr(question, "chapter", None)
-
-    # 題號下拉選單：需同時指定 category + chapter，才會有對應題號
     number_list = []
     if category and current_chapter:
         raw_numbers = (
@@ -333,11 +345,6 @@ def mock_exam(request):
             .distinct()
         )
         number_list = sorted(raw_numbers, key=sort_key)
-
-    # ⬇️ 取得該類別總題數
-    category_total = (
-        Question.objects.filter(category=category).count() if category else 0
-    )
 
     return render(
         request,
@@ -358,6 +365,8 @@ def mock_exam(request):
             "categories": categories,
             "current_category": category,
             "category_total": category_total,
+            "shuffled_choices": request.session.get("shuffled_choices"),
+            "ollama_model": model_name,
         },
     )
 
@@ -389,6 +398,8 @@ def chapter_practice(request):
     if number:
         questions = questions.filter(number=number)
 
+    ollama_enabled = request.session.get("ollama_enabled", True)
+    model_name = request.session.get("ollama_model", "qwen2.5-coder:3b")
     total = questions.count()
     category_total = (
         Question.objects.filter(category=category).count() if category else 0
@@ -452,7 +463,7 @@ def chapter_practice(request):
         if not result:
             if question.image:
                 ai_explanation = question.explanation
-            else:
+            elif ollama_enabled:  # ✅ 判斷是否開啟 AI
                 options_text = ""
                 for letter in "ABCDEFGH":
                     choice = getattr(question, f"choice_{letter.lower()}", None)
@@ -466,7 +477,8 @@ def chapter_practice(request):
                     ),
                     correct_ans=correct_answer,
                     question=question.category,
-                    options=options_text,  # ✅ 加這行
+                    options=options_text,
+                    model_name=model_name,
                 )
 
         if request.user.is_authenticated:
@@ -519,6 +531,7 @@ def chapter_practice(request):
             "chapter": chapter,
             "number": number,
             "category_total": category_total,
+            "ollama_model": model_name,
         },
     )
 
@@ -582,3 +595,50 @@ def review_wrong_questions(request):
             "current_category": category,
         },
     )
+
+
+@require_GET
+def toggle_ollama(request):
+    enable = request.GET.get("enable") == "true"
+    request.session["ollama_enabled"] = enable
+    return JsonResponse({"status": "ok", "enabled": enable})
+
+
+def clear_ollama_notice(request):
+    request.session.pop("show_ollama_notice", None)
+    return JsonResponse({"cleared": True})
+
+
+def set_ollama_model(request):
+    model = request.GET.get("model")
+    if model:
+        request.session["ollama_model"] = model
+    return JsonResponse({"status": "ok", "model": model})
+
+
+def register(request):
+    if request.method == "POST":
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect("login")
+    else:
+        form = UserCreationForm()
+
+    return render(request, "registration/register.html", {"form": form})
+
+
+def is_ollama_running():
+    try:
+        response = requests.get("http://localhost:11434")
+        return response.status_code == 200
+    except:
+        return False
+
+
+# def is_ollama_running():
+#     try:
+#         response = requests.get("http://192.168.0.101:11434/api/tags", timeout=3)
+#         return response.status_code == 200
+#     except Exception:
+#         return False

@@ -22,9 +22,10 @@
   </div>
   {% if category_total %}
     <div class="progress mb-3 position-relative" style="height: 20px; background-color: #444;">
-      <div class="progress-bar" role="progressbar"
-          style="width: {{ current_index|add:1|div:category_total|mul:100|floatformat:0 }}%;
-                  background-color: rgba(255, 255, 255, 0.25);">
+      <div class="progress-bar"
+          role="progressbar"
+          data-width="{{ current_index|add:1|div:category_total|mul:100|floatformat:0 }}"
+          style="width: 0%; background-color: rgba(255, 255, 255, 0.25);">
       </div>
       <div class="progress-label">
         第 {{ current_index|add:1 }} 題 / 共 {{ category_total }} 題
@@ -113,7 +114,7 @@
 
               {% if not result and ai_explanation %}
                 <div class="mt-3">
-                  🤖 <strong>AI 補充說明：</strong><br>
+                  <strong>補充說明：</strong><br>
                   {{ ai_explanation|safe_markdown_ai|safe }}
                 </div>
               {% endif %}
@@ -139,7 +140,17 @@
     {% endif %}
   </div>
 {% endif %}
-
+<script>
+  window.addEventListener("DOMContentLoaded", () => {
+    const bar = document.querySelector(".progress-bar");
+    if (bar) {
+      const targetWidth = bar.getAttribute("data-width");
+      setTimeout(() => {
+        bar.style.width = `${targetWidth}%`;
+      }, 100); // 加一點點延遲確保動畫會跑
+    }
+  });
+</script>
 {% include 'quiz/_overlay_canvas.html' %}
 {% include 'quiz/_search_mock_exam.html' %}
 

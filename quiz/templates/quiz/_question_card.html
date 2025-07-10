@@ -39,43 +39,39 @@
     <!-- ======================== -->
     <!-- 選項區塊 -->
     <!-- ======================== -->
-    {% for option in "ABCDEFGH" %}
-      {% with choice=question|get_choice:option category=question.category %}
-        {% if choice and choice|cut:" " != "X" %}
-          <div class="form-check d-flex align-items-start gap-2 py-2 px-3 mb-3 rounded-3"
-               style="background: linear-gradient(to right, #f0f4ff, #e6f0ff);">
-            <input class="form-check-input mt-1"
-                   type="checkbox"
-                   name="selected_answer"
-                   value="{{ option }}"
-                   id="option_{{ option }}"
-                   {% if option in selected_answer %}checked{% endif %}>
+    {% if not question.is_fill_in %}
+      {% for option in "ABCDEFGH" %}
+        {% with choice=shuffled_choices|dict_get:option %}
+          {% if choice and choice|cut:" " != "X" %}
+            <div class="form-check d-flex align-items-start gap-2 py-2 px-3 mb-3 rounded-3"
+                style="background: linear-gradient(to right, #f0f4ff, #e6f0ff);">
+              <input class="form-check-input mt-1"
+                    type="checkbox"
+                    name="selected_answer"
+                    value="{{ option }}"
+                    id="option_{{ option }}"
+                    {% if option in selected_answer %}checked{% endif %}>
 
-            <label class="form-check-label flex-grow-1" for="option_{{ option }}">
-              <div class="d-flex align-items-start gap-2">
-                <strong>{{ option }}.</strong>
-                <!-- 顯示選項內容 -->
-                <div>{{ choice|safe_markdown_with_lang_for_options:category|safe }}</div>
-              </div>
-
-              {% if choice.is_correct %}
-                <span class="badge bg-success ms-2">正確答案</span>
-              {% endif %}
-
-              {% if choice.ai_explanation %}
-                <div class="mt-2">
-                  🤖 AI 補充說明：{{ choice.ai_explanation|safe_markdown_with_lang:category|safe }}
+              <label class="form-check-label flex-grow-1" for="option_{{ option }}">
+                <div class="d-flex align-items-start gap-2">
+                  <strong>{{ option }}.</strong>
+                  <!-- 顯示選項內容 -->
+                  <div>{{ choice|safe_markdown_with_lang_for_options:category|safe }}</div>
                 </div>
-              {% endif %}
 
-              {% if choice.fill_answer %}
-                <p class="text-muted">目前題目科目是：{{ category }}</p>
-              {% endif %}
-            </label>
-          </div>
-        {% endif %}
-      {% endwith %}
-    {% endfor %}
+                {% if not result and correct_answer and option in correct_answer %}
+                  <div class="mt-2">
+                    <strong> 補充說明：</strong><br>
+                    {{ ai_explanation|safe_markdown_with_lang:category|safe }}
+                  </div>
+                {% endif %}
+              </label>
+            </div>
+          {% endif %}
+        {% endwith %}
+      {% endfor %}
+    {% endif %}
+
 
     <!-- ======================== -->
     <!-- 填充題輸入區 -->
@@ -116,7 +112,7 @@
 
             {% if not result and ai_explanation %}
               <div class="mt-3">
-                🤖 <strong>AI 補充說明：</strong><br>
+                <strong> 補充說明：</strong><br>
                 {{ ai_explanation|safe_markdown_ai|safe }}
               </div>
             {% endif %}

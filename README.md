@@ -1,4 +1,5 @@
 
+
 # Quiz Question Bank
 
 這是一個使用 Django 建立的線上題庫系統，支援選擇題、填空題、小畫家作答、章節分類與 AI 解釋功能。
@@ -13,7 +14,7 @@
 - 錯題回饋與提示
 - AI 模型：整合 qwen2.5-coder:3b 分析解釋錯誤原因
 
-## 🧱 資料模型
+## � 資料模型
 
 ### Question (題目)
 
@@ -32,8 +33,13 @@
 ## 安裝與啟動方式
 
 ```bash
-git clone https://github.com/你的帳號/questionbank.git
 cd questionbank
+git clone https://github.com/你的帳號/questionbank.git
+
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+
 python manage.py migrate
 python manage.py runserver
 ```
@@ -42,6 +48,12 @@ python manage.py runserver
 
 ```bash
 python manage.py test
+```
+
+## 動產生完整 requirements.txt
+
+```bash
+pip freeze > requirements.txt
 ```
 
 ## 匯出資料
@@ -63,3 +75,9 @@ python manage.py loaddata drawings.json
 
 
 作者：艸先生
+
+- 資料庫題號自動更新
+`python manage.py update_number_order`
+
+- 匯入資料
+`python manage.py shell < import_questions.py`
