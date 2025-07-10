@@ -71,10 +71,18 @@
         </div>
 
         {% if not result and ai_explanation %}
-          <div class="explanation mt-3">
-            🤖 <strong>AI 補充說明：</strong><br>
-            {{ ai_explanation|safe_markdown_with_lang:question.category|safe }}
+          <div class="mt-3">
+            <strong>補充說明：</strong><br>
+            {{ ai_explanation|safe_markdown_ai|safe }}
 
+            <!-- ✅ AI 解釋寫入按鈕 -->
+            <form method="post" action="{% url 'save_ai_explanation' question.id %}?next=1" class="mt-2">
+              {% csrf_token %}
+              <input type="hidden" name="explanation" value="{{ ai_explanation }}">
+              <button type="submit" class="btn btn-sm btn-outline-success">
+                ✅ 回答不錯，存入解釋
+              </button>
+            </form>
           </div>
         {% endif %}
       {% endif %}

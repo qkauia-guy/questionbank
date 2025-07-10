@@ -8,9 +8,12 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.utils.timezone import localtime
 from .models import Question, QuestionRecord
 from django.urls import reverse
-from urllib.parse import urlencode
 from django.http import JsonResponse
-from django.views.decorators.http import require_GET
+from django.views.decorators.http import require_GET, require_POST
+from django.contrib import messages
+from urllib.parse import urlencode, urlparse, parse_qs
+from django.utils.http import urlencode
+
 
 # ========== 工具函式 ==========
 
@@ -282,15 +285,15 @@ def mock_exam(request):
         result = check_answer(question, selected_answer, fill_input)
 
         if not result:
+            # ❗ 圖片題：只顯示手動解釋，不呼叫 AI
             if question.image:
-                ai_explanation = question.explanation
-            elif ollama_enabled:  # ✅ 判斷是否開啟 AI
+                ai_explanation = None  # 不呼叫 AI
+            elif ollama_enabled:
                 options_text = ""
-                if shuffled_choices:
-                    for letter in "ABCDEFGH":
-                        val = shuffled_choices.get(letter)
-                        if val and val.upper() != "X":
-                            options_text += f"{letter}. {val}\n"
+                for letter in "ABCDEFGH":
+                    choice = getattr(question, f"choice_{letter.lower()}", None)
+                    if choice and choice.strip().upper() != "X":
+                        options_text += f"{letter}. {choice}\n"
 
                 ai_explanation = get_ai_feedback_ollama(
                     question_text=question.question_text,
@@ -390,6 +393,7 @@ def chapter_practice(request):
     if number == "None":
         number = None
 
+    # 題庫查詢
     questions = Question.objects.order_by("chapter", "number_order")
     if category:
         questions = questions.filter(category=category)
@@ -398,12 +402,11 @@ def chapter_practice(request):
     if number:
         questions = questions.filter(number=number)
 
-    ollama_enabled = request.session.get("ollama_enabled", True)
-    model_name = request.session.get("ollama_model", "qwen2.5-coder:3b")
     total = questions.count()
     category_total = (
         Question.objects.filter(category=category).count() if category else 0
     )
+
     if total == 0:
         return render(
             request,
@@ -418,6 +421,14 @@ def chapter_practice(request):
             },
         )
 
+    # 若帶有 ?next=1，則進入下一題
+    if request.method == "GET" and request.GET.get("next") == "1":
+        request.session["current_index"] = request.session.get("current_index", 0) + 1
+        return redirect(
+            f"{reverse('chapter_practice')}?{urlencode({'category': category or '', 'chapter': chapter or '', 'number': number or ''})}"
+        )
+
+    # 目前第幾題
     current_index = request.session.get("current_index", 0)
     if current_index >= total:
         current_index = 0
@@ -429,7 +440,7 @@ def chapter_practice(request):
     ai_explanation = None
     question = questions[current_index]
 
-    # 準備 query string 參數
+    # query 參數備用
     query_params = urlencode(
         {
             "category": category or "",
@@ -460,14 +471,16 @@ def chapter_practice(request):
         result = check_answer(question, selected_answer, fill_input)
         correct_answer = question.answer
 
+        # ✅ AI 補充說明（僅答錯才顯示）
         if not result:
-            if question.image:
-                ai_explanation = question.explanation
-            elif ollama_enabled:  # ✅ 判斷是否開啟 AI
+            ollama_enabled = request.session.get("ollama_enabled", True)
+            model_name = request.session.get("ollama_model", "qwen2.5-coder:3b")
+
+            if not question.image and ollama_enabled:
                 options_text = ""
                 for letter in "ABCDEFGH":
                     choice = getattr(question, f"choice_{letter.lower()}", None)
-                    if choice and choice != "X":
+                    if choice and choice.strip().upper() != "X":
                         options_text += f"{letter}. {choice}\n"
 
                 ai_explanation = get_ai_feedback_ollama(
@@ -481,6 +494,7 @@ def chapter_practice(request):
                     model_name=model_name,
                 )
 
+        # ✅ 建立答題紀錄
         if request.user.is_authenticated:
             QuestionRecord.objects.create(
                 user=request.user,
@@ -531,7 +545,7 @@ def chapter_practice(request):
             "chapter": chapter,
             "number": number,
             "category_total": category_total,
-            "ollama_model": model_name,
+            "ollama_model": request.session.get("ollama_model", "qwen2.5-coder:3b"),
         },
     )
 
@@ -642,3 +656,26 @@ def is_ollama_running():
 #         return response.status_code == 200
 #     except Exception:
 #         return False
+
+
+@login_required
+@require_POST
+def save_ai_explanation(request, pk):
+    question = get_object_or_404(Question, pk=pk)
+    new_explanation = request.POST.get("explanation")
+
+    if new_explanation:
+        question.explanation = new_explanation
+        question.save()
+        messages.success(request, "✅ 解釋已成功寫入")
+    else:
+        messages.warning(request, "⚠️ 沒有收到解釋內容")
+
+    # ⏩ 回到來源頁面並觸發下一題
+    referer = request.META.get("HTTP_REFERER", "/")
+    parsed = urlparse(referer)
+    base_url = parsed.path
+    query = parse_qs(parsed.query)
+    query["next"] = ["1"]
+
+    return redirect(f"{base_url}?{urlencode(query, doseq=True)}")

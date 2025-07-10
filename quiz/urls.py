@@ -24,4 +24,9 @@ urlpatterns = [
     path("clear-ollama-notice", views.clear_ollama_notice, name="clear_ollama_notice"),
     path("set-ollama-model", views.set_ollama_model, name="set_ollama_model"),
     path("accounts/register/", quiz_views.register, name="register"),
+    path(
+        "question/<int:pk>/save_ai_explanation/",
+        views.save_ai_explanation,
+        name="save_ai_explanation",
+    ),
 ]

@@ -5,9 +5,9 @@
 </head>
 <body>
   <h1>所有題目</h1>
-  <ul>
+  <ul class="list-group">
     {% for q in questions %}
-      <li>
+      <li class="list-group-item list-group-item-secondary list-group-item-action" >
         <strong>{{ q.chapter }}-{{ q.number }}</strong><br>
         {{ q.question_text }}<br>
         A. {{ q.choice_a }}<br>
