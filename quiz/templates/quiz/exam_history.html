@@ -22,7 +22,7 @@
                 <tr>
                   <td class="text-center">{{ record.question.category }}</td>
                   <td class="text-center">
-                    <a href="{% url 'mock_exam' %}?chapter={{ record.question.chapter|urlencode }}&number={{ record.question.number|urlencode }}">
+                    <a href="{% url 'mock_exam' %}?category={{ record.question.category|urlencode }}&chapter={{ record.question.chapter|urlencode }}&number={{ record.question.number|urlencode }}">
                       {{ record.question.chapter }} - {{ record.question.number }}
                     </a>
                   </td>

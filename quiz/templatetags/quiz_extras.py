@@ -63,6 +63,7 @@ def safe_markdown_with_lang(value, category):
 @register.filter
 def safe_markdown_with_lang_for_options(text, category):
     import markdown2
+    import re  # ⬅️ 別忘記加上 re
 
     category_to_lang = {
         "database": "sql",
@@ -79,20 +80,18 @@ def safe_markdown_with_lang_for_options(text, category):
         "bash": "bash",
     }
 
-    lang = category_to_lang.get(category.lower(), "plaintext")
+    # ✅ 防呆處理 category 為 None 的情況
+    category = str(category or "").lower()
+    lang = category_to_lang.get(category, "plaintext")
 
-    # 將 `...` 包住的內容轉成 fenced code block（保留 markdown 語法）
     def wrap_code(match):
         code = match.group(1)
         return f"\n```{lang}\n{code}\n```\n"
 
-    # 把 `xxx` 包起來的內容變成 markdown 的 ```區塊```
     if text:
         text = re.sub(r"`([^`]+)`", wrap_code, text)
 
-    # markdown 轉換，加上 fenced code blocks 與 tables
     html = markdown2.markdown(text.strip(), extras=["fenced-code-blocks", "tables"])
-
     return html
 
 
@@ -138,3 +137,8 @@ def mul(value, arg):
         return float(value) * float(arg)
     except (ValueError, TypeError):
         return 0
+
+
+@register.filter
+def dict_get(d, key):
+    return d.get(key, "")

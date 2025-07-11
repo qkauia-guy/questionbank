@@ -128,7 +128,7 @@ def get_ai_feedback_ollama(
     :param question: Question 物件（可選，用來提取選項）
     :param category: 題目類別（可選）
     :param options: 若有自定義選項內容（例如隨機順序後），可傳入
-    :param model_name: 使用者選取的 Ollama 模型名稱（預設為 qwen2.5-coder:3b）
+    :param model_name: 使用者選取的 Ollama 模型名稱（預設為 qwen2.5-coder:7b）
     """
 
     # 類別說明（若有提供）
@@ -227,7 +227,7 @@ def mock_exam(request):
     selected_answer = []
     ai_explanation = None
     fill_input = ""
-    model_name = request.session.get("ollama_model", "qwen2.5-coder:3b")
+    model_name = request.session.get("ollama_model", "qwen2.5-coder:7b")
 
     questions = Question.objects.order_by("chapter", "number_order")
     if category:
@@ -474,7 +474,7 @@ def chapter_practice(request):
         # ✅ AI 補充說明（僅答錯才顯示）
         if not result:
             ollama_enabled = request.session.get("ollama_enabled", True)
-            model_name = request.session.get("ollama_model", "qwen2.5-coder:3b")
+            model_name = request.session.get("ollama_model", "qwen2.5-coder:7b")
 
             if not question.image and ollama_enabled:
                 options_text = ""
@@ -545,7 +545,7 @@ def chapter_practice(request):
             "chapter": chapter,
             "number": number,
             "category_total": category_total,
-            "ollama_model": request.session.get("ollama_model", "qwen2.5-coder:3b"),
+            "ollama_model": request.session.get("ollama_model", "qwen2.5-coder:7b"),
         },
     )
 
