@@ -1,4 +1,5 @@
 <!-- quiz/_followup_result.html -->
+{% load quiz_extras %}
 <div class="mt-2">
-  <strong>🤖 AI：</strong> {{ reply|linebreaksbr }}
-</div>
+  <strong>🤖 回覆：</strong> {{ reply|safe_markdown_ai|safe }}
+<hr>

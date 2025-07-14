@@ -115,13 +115,13 @@
                 <div class="mt-3">
                   <strong>🤖 AI 解釋：</strong><br>
                   {{ ai_explanation|safe_markdown_ai|safe }}
-
+                  <hr>
                   <!-- ✅ AI 寫入按鈕 -->
-                  <form method="post" action="{% url 'save_ai_explanation' question.id %}?next=1" class="mt-2">
+                  <form method="post" action="{% url 'save_ai_explanation' question.id %}?next=1" class="my-3">
                     {% csrf_token %}
                     <input type="hidden" name="explanation" value="{{ ai_explanation }}">
                     <button type="submit" class="btn btn-sm btn-outline-success">
-                      ✅ 回答不錯，存入解釋
+                      ☆ 回答不錯，存入解釋
                     </button>
                   </form>
                 </div>

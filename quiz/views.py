@@ -536,7 +536,7 @@ def chapter_practice(request):
             "correct_answer": correct_answer,
             "ai_explanation": ai_explanation,
             "total_question_count": total,
-            "current_index": current_index + 1,
+            "current_index": current_index,
             "chapter_list": chapter_list,
             "number_list": number_list,
             "categories": categories,
