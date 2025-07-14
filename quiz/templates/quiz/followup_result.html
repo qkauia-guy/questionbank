@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div id="followup-section" class="mt-4">
+  <h5>🤔 想進一步了解？你可以持續追問 AI：</h5>
+
+  <!-- 🧠 過往對話顯示區 -->
+  <div id="chat-box" class="mb-3 border rounded p-3" style="background:#f8f9fa;"></div>
+
+  <!-- 追問表單 -->
+  <form id="followup-form" method="post" action="{% url 'ask_ai_followup' %}">
+    {% csrf_token %}
+    <input type="hidden" name="question_text" value="{{ question.question_text }}">
+    <input type="hidden" name="category" value="{{ category }}">
+    <input type="hidden" name="options" value="{{ options }}">
+    <input type="hidden" name="chat_history" id="chat_history" value="">
+
+    <div class="mb-3">
+      <textarea name="followup" class="form-control" rows="2" placeholder="輸入你想問的問題，例如：為什麼要用 elif？"></textarea>
+    </div>
+    <button type="submit" class="btn btn-primary">✉️ 送出追問</button>
+  </form>
+</div>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const form = document.getElementById("followup-form");
+  const chatBox = document.getElementById("chat-box");
+  const chatHistoryInput = document.getElementById("chat_history");
+
+  let chatHistory = "";  // 對話紀錄文字
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const formData = new FormData(form);
+    const userInput = formData.get("followup");
+
+    // 顯示使用者問題
+    chatBox.innerHTML += `<div><strong>👤 你：</strong>${userInput}</div>`;
+
+    try {
+      const response = await fetch(form.action, {
+        method: "POST",
+        headers: { "X-CSRFToken": formData.get("csrfmiddlewaretoken") },
+        body: formData,
+      });
+
+      const html = await response.text();
+
+      // 顯示 AI 回覆
+      chatBox.innerHTML += `<div>${html}</div>`;
+
+      // 更新 chat history
+      chatHistory += `👤 你：${userInput}\n🤖 AI：${html.replace(/<[^>]+>/g, "")}\n`;
+      chatHistoryInput.value = chatHistory;
+
+      form.querySelector("textarea").value = "";  // 清空輸入
+    } catch (err) {
+      alert("⚠️ 發生錯誤：" + err.message);
+    }
+  });
+});
+</script>
+{% endblock %}

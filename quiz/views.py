@@ -13,6 +13,7 @@ from django.views.decorators.http import require_GET, require_POST
 from django.contrib import messages
 from urllib.parse import urlencode, urlparse, parse_qs
 from django.utils.http import urlencode
+from django.views.decorators.csrf import csrf_exempt
 
 
 # ========== 工具函式 ==========
@@ -119,24 +120,22 @@ def get_ai_feedback_ollama(
     question=None,
     category=None,
     options="",
-    model_name="qwen2.5-coder:3b",  # 預設使用此模型
+    model_name="qwen2.5-coder:3b",
 ):
     """
-    :param question_text: 題目內容
-    :param user_ans: 使用者的答案，例如 "B" 或 "AC"
-    :param correct_ans: 正確答案
-    :param question: Question 物件（可選，用來提取選項）
-    :param category: 題目類別（可選）
-    :param options: 若有自定義選項內容（例如隨機順序後），可傳入
-    :param model_name: 使用者選取的 Ollama 模型名稱（預設為 qwen2.5-coder:7b）
+    回傳 AI 解釋說明文字，包含類別強化提示
     """
 
-    # 類別說明（若有提供）
-    category_line = (
-        f"這題的範圍是「{category or getattr(question, 'category', '')}」\n"
-        if (category or question)
-        else ""
-    )
+    # 防呆處理
+    user_ans = user_ans or "（未提供）"
+    correct_ans = correct_ans or "（未提供）"
+
+    # 類別：優先使用 category，否則從 question 擷取
+    category_text = category or (getattr(question, "category", "") or "").strip()
+    if not category_text:
+        print(
+            f"DEBUG: category = {category}, question.category = {getattr(question, 'category', None)}"
+        )
 
     # 自動擷取選項（若未手動傳入）
     if not options and question:
@@ -145,18 +144,19 @@ def get_ai_feedback_ollama(
             if choice_text and choice_text.upper() != "X":
                 options += f"{letter}. {choice_text}\n"
 
-    # 組合 prompt
-    prompt = prompt = (
-        f"""請使用繁體中文回答。
+    # 強化版 prompt，讓模型一定讀到類別
+    prompt = f"""請使用繁體中文回答。
 這是一題選擇題，請幫我解釋為什麼答案不是「{user_ans}」，而是「{correct_ans}」。
-{category_line}
-題目如下：
+
+請特別根據「題目範圍」思考解釋。
+科目範圍：「{category_text or '未提供'}」
+
+題目內容如下：
 {question_text}
 
 選項如下：
 {options}
 """.strip()
-    )
 
     try:
         response = requests.post(
@@ -546,6 +546,7 @@ def chapter_practice(request):
             "number": number,
             "category_total": category_total,
             "ollama_model": request.session.get("ollama_model", "qwen2.5-coder:7b"),
+            "options": generate_options_text(question),
         },
     )
 
@@ -679,3 +680,55 @@ def save_ai_explanation(request, pk):
     query["next"] = ["1"]
 
     return redirect(f"{base_url}?{urlencode(query, doseq=True)}")
+
+
+@csrf_exempt
+@login_required
+@require_POST
+def ask_ai_followup(request):
+    question_text = request.POST.get("question_text", "")
+    category = request.POST.get("category", "")
+    options = request.POST.get("options", "")
+    followup = request.POST.get("followup", "")
+    chat_history = request.POST.get("chat_history", "")
+
+    prompt = f"""以下是使用者與 AI 的過往對話：
+
+{chat_history.strip()}
+
+---
+
+原始題目：
+{question_text}
+
+範圍：「{category}」
+選項：
+{options}
+
+使用者的新問題：
+{followup}
+
+請用繁體中文回答。
+"""
+
+    response = requests.post(
+        "http://localhost:11434/api/generate",
+        json={"model": "qwen2.5-coder:3b", "prompt": prompt, "stream": False},
+        timeout=90,
+    )
+    data = response.json()
+    reply = data.get("response", "⚠️ AI 沒有回應。")
+
+    return render(request, "quiz/_followup_result.html", {"reply": reply})
+
+
+def generate_options_text(question):
+    """
+    根據題目自動產生選項文字（不含 "X" 的選項），給 AI 用的提示格式。
+    """
+    options_text = ""
+    for letter in "ABCDEFGH":
+        choice = getattr(question, f"choice_{letter.lower()}", "").strip()
+        if choice and choice.upper() != "X":
+            options_text += f"{letter}. {choice}\n"
+    return options_text

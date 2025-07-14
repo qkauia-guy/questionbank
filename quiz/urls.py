@@ -29,4 +29,5 @@ urlpatterns = [
         views.save_ai_explanation,
         name="save_ai_explanation",
     ),
+    path("ask-ai-followup/", views.ask_ai_followup, name="ask_ai_followup"),
 ]
