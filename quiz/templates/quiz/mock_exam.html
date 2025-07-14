@@ -16,7 +16,7 @@
   {% include 'quiz/_search_mock_exam.html' %}
 
   <!-- 題目卡片 -->
-  {% include 'quiz/_question_card.html' %}
+  {% include "quiz/_question_card.html" with allow_followup=True %}
 
   <!-- 疊加效果（畫筆區） -->
   {% include 'quiz/_overlay_canvas.html' %}
