@@ -1,0 +1,27 @@
+{% load quiz_extras %}
+{% load markdown_deux_tags %}
+
+{% if choice and choice|cut:" " != "X" %}
+  <div class="form-check d-flex align-items-start gap-2 py-2 px-3 mb-3 rounded-3"
+       style="background: linear-gradient(to right, #f0f4ff, #e6f0ff);">
+    <input class="form-check-input mt-1"
+           type="checkbox"
+           name="selected_answer"
+           value="{{ option }}"
+           id="option_{{ option }}"
+           {% if option in selected_answer %}checked{% endif %}>
+    <label class="form-check-label flex-grow-1" for="option_{{ option }}">
+      <div class="d-flex align-items-start gap-2">
+        <strong>{{ option }}.</strong>
+        <div>{{ choice|safe_markdown_with_lang_for_options:question.category|safe }}</div>
+      </div>
+
+      {% if not result and correct_answer and option in correct_answer %}
+        <div class="mt-2">
+          <strong>補充說明：</strong><br>
+          {{ ai_explanation|safe_markdown_with_lang:question.category|safe }}
+        </div>
+      {% endif %}
+    </label>
+  </div>
+{% endif %}

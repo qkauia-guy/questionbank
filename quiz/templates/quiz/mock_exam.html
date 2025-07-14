@@ -7,17 +7,18 @@
 {% endblock %}
 
 {% block content %}
-  {% include 'quiz/_question_card.html' %}
+  <!-- 顯示作答時間 -->
+  <div id="floating-timer">
+    <big>⏱</big> 作答時間：<span id="timer">0</span> 秒
+  </div>
 
-  <!-- ✅ 桌機與手機版搜尋欄由 partial 控制 -->
+  <!-- 搜尋欄（分類、章節、題號） -->
   {% include 'quiz/_search_mock_exam.html' %}
 
-  <!-- ✅ RWD 判斷（可刪） -->
-  <p style="color:red;">
-    {% if request.user_agent.is_mobile %}
-      📱 手機模式
-    {% else %}
-      💻 桌機模式
-    {% endif %}
-  </p>
+  <!-- 題目卡片 -->
+  {% include 'quiz/_question_card.html' %}
+
+  <!-- 疊加效果（畫筆區） -->
+  {% include 'quiz/_overlay_canvas.html' %}
+
 {% endblock %}

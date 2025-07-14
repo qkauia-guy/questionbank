@@ -120,7 +120,7 @@ def get_ai_feedback_ollama(
     question=None,
     category=None,
     options="",
-    model_name="qwen2.5-coder:3b",
+    model_name="qwen2.5-coder:7b",
 ):
     """
     回傳 AI 解釋說明文字，包含類別強化提示
@@ -713,7 +713,7 @@ def ask_ai_followup(request):
 
     response = requests.post(
         "http://localhost:11434/api/generate",
-        json={"model": "qwen2.5-coder:3b", "prompt": prompt, "stream": False},
+        json={"model": "qwen2.5-coder:7b", "prompt": prompt, "stream": False},
         timeout=90,
     )
     data = response.json()

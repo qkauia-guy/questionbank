@@ -1,100 +1,56 @@
 {% load quiz_extras %}
 {% load markdown_deux_tags %}
 
-<!-- ⬆️ 左上角浮出秒數 -->
-<div id="floating-timer">
-  <big>⏱</big> 作答時間：<span id="timer">0</span> 秒
-</div>
-
-<div class="container mt-3">
-  <div class="mb-3 text-muted">
-    {% if category and category != "None" %}
-      <span class="me-3">🗂 科目：{{ question.category }}</span>
-    {% endif %}
-    <span class="me-3">📘 章節：{{ question.chapter }} - {{ question.number }}</span>
-  </div>
-</div>
-
-<!-- ======================== -->
-<!-- 題目卡片區塊 -->
-<!-- ======================== -->
-<div class="question-card">
+<div class="question-card my-3">
   <form method="post">
     {% csrf_token %}
     <input type="hidden" name="question_id" value="{{ question.id }}">
     <input type="hidden" name="used_time" id="used_time" value="0">
 
-    <!-- 題目內容與附圖 -->
+    <!-- 題目與附圖 -->
     <div class="mb-3">
       {% if question.image %}
         <div class="mt-3">
-          <img src="{{ question.image.url }}" alt="題目附圖" style="max-width: 100%; border: 1px solid #ccc; border-radius: 8px;">
+          <img src="{{ question.image.url }}" alt="題目附圖"
+               style="max-width: 100%; border: 1px solid #ccc; border-radius: 8px;">
         </div>
       {% endif %}
-      {% if question %}
-        {{ question.question_text|safe_markdown_with_lang:question.category|safe }}
-      {% endif %}
+      {{ question.question_text|safe_markdown_with_lang:question.category|safe }}
     </div>
 
-    <!-- ======================== -->
-    <!-- 選項區塊 -->
-    <!-- ======================== -->
-    {% if not question.is_fill_in %}
-      {% for option in "ABCDEFGH" %}
+    <!-- 選項 -->
+    {% for option in "ABCDEFGH" %}
+      {% if shuffled_choices %}
         {% with choice=shuffled_choices|dict_get:option %}
-          {% if choice and choice|cut:" " != "X" %}
-            <div class="form-check d-flex align-items-start gap-2 py-2 px-3 mb-3 rounded-3"
-                style="background: linear-gradient(to right, #f0f4ff, #e6f0ff);">
-              <input class="form-check-input mt-1"
-                    type="checkbox"
-                    name="selected_answer"
-                    value="{{ option }}"
-                    id="option_{{ option }}"
-                    {% if option in selected_answer %}checked{% endif %}>
-
-              <label class="form-check-label flex-grow-1" for="option_{{ option }}">
-                <div class="d-flex align-items-start gap-2">
-                  <strong>{{ option }}.</strong>
-                  <!-- 顯示選項內容 -->
-                  <div>{{ choice|safe_markdown_with_lang_for_options:category|safe }}</div>
-                </div>
-
-                {% if not result and correct_answer and option in correct_answer %}
-                  <div class="mt-2">
-                    <strong> 補充說明：</strong><br>
-                    {{ ai_explanation|safe_markdown_with_lang:category|safe }}
-                  </div>
-                {% endif %}
-              </label>
-            </div>
-          {% endif %}
+          {% include "quiz/_choice_block.html" %}
         {% endwith %}
-      {% endfor %}
-    {% endif %}
+      {% else %}
+        {% with choice=question|get_choice:option %}
+          {% include "quiz/_choice_block.html" %}
+        {% endwith %}
+      {% endif %}
+    {% endfor %}
 
 
-    <!-- ======================== -->
-    <!-- 填充題輸入區 -->
-    <!-- ======================== -->
+    <!-- 填充題 -->
     {% if question.is_fill_in %}
       <div class="mb-3">
         <label for="fill_answer" class="form-label">輸入答案：</label>
-        <input type="text" class="form-control" name="fill_answer" id="fill_answer" value="">
+        <input type="text" class="form-control" name="fill_answer" id="fill_answer" value="{{ fill_input }}">
       </div>
     {% endif %}
 
-    <!-- ======================== -->
     <!-- 操作按鈕 -->
-    <!-- ======================== -->
     <div class="d-flex flex-wrap gap-2 mt-3">
+      {% if show_restart %}
+        <button type="submit" name="restart" class="btn btn-outline-danger">重頭開始</button>
+        <button type="submit" name="prev" class="btn btn-outline-secondary">上一題</button>
+      {% endif %}
       <button type="submit" name="skip" value="1" class="btn btn-secondary">跳過</button>
       <button type="submit" class="btn btn-primary">送出</button>
     </div>
   </form>
 
-  <!-- ======================== -->
-  <!-- Modal 結果顯示 -->
-  <!-- ======================== -->
   {% if result is not None %}
     <div class="modal fade" id="resultModal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered">
@@ -116,7 +72,6 @@
                   <strong>🤖 AI 解釋：</strong><br>
                   {{ ai_explanation|safe_markdown_ai|safe }}
                   <hr>
-                  <!-- ✅ AI 寫入按鈕 -->
                   <form method="post" action="{% url 'save_ai_explanation' question.id %}?next=1" class="my-3">
                     {% csrf_token %}
                     <input type="hidden" name="explanation" value="{{ ai_explanation }}">
@@ -124,6 +79,9 @@
                       ☆ 回答不錯，存入解釋
                     </button>
                   </form>
+                  {% if allow_followup %}
+                    {% include 'quiz/_ai_followup_form.html' %}
+                  {% endif %}
                 </div>
               {% endif %}
 
@@ -146,18 +104,12 @@
         </div>
       </div>
     </div>
-
-    <!-- 顯示 Modal 的 JavaScript -->
+    
     <script>
       document.addEventListener("DOMContentLoaded", function () {
-        var resultModal = new bootstrap.Modal(document.getElementById('resultModal'));
-        resultModal.show();
+        const modal = new bootstrap.Modal(document.getElementById('resultModal'));
+        modal.show();
       });
     </script>
   {% endif %}
 </div>
-
-<!-- ======================== -->
-<!-- Canvas 疊加效果 -->
-<!-- ======================== -->
-{% include 'quiz/_overlay_canvas.html' %}

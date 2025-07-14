@@ -89,7 +89,7 @@ def safe_markdown_with_lang_for_options(text, category):
         text = re.sub(r"`([^`]+)`", wrap_code, text)
 
     html = markdown2.markdown(text.strip(), extras=["fenced-code-blocks", "tables"])
-    return html
+    return mark_safe(html)
 
 
 @register.filter
