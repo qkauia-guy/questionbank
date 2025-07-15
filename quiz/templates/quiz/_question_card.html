@@ -75,16 +75,17 @@
                     {% csrf_token %}
                     <input type="hidden" name="explanation" value="{{ ai_explanation }}">
                     <button type="submit" class="btn btn-sm btn-outline-success">
-                      ☆ 回答不錯，存入解釋
+                      ☆ 存入解釋
                     </button>
 
-                    <button class="btn btn-sm btn-outline-secondary ms-2"
+                    <button class="btn btn-sm btn-outline-secondary"
                             type="button"
                             data-bs-toggle="collapse"
                             data-bs-target="#answerCollapse"
                             aria-expanded="false"
-                            aria-controls="answerCollapse">
-                      作答紀錄
+                            aria-controls="answerCollapse"
+                            data-arrow-toggle>
+                      作答紀錄 <span class="arrow">▼</span>
                     </button>
 
                     {% if question.explanation %}
@@ -93,8 +94,9 @@
                               data-bs-toggle="collapse"
                               data-bs-target="#originalExplanation"
                               aria-expanded="false"
-                              aria-controls="originalExplanation">
-                        先前解釋
+                              aria-controls="originalExplanation"
+                              data-arrow-toggle>
+                        先前解釋 <span class="arrow">▼</span>
                       </button>
                     {% endif %}
                   </form>
@@ -130,7 +132,7 @@
                       {% with choice=shuffled_choices|dict_get:option %}
                         {% if choice and choice != "X" %}
                           <li class="list-group-item">
-                            <strong>{{ option }}.</strong> {{ choice }}
+                            <strong>{{ option }}.</strong> {{ choice|safe_markdown_with_lang_for_options:question.category|safe }}
                             {% if option in selected_answer %}
                               <span class="badge bg-primary ms-2">你的選擇</span>
                             {% endif %}
@@ -144,7 +146,7 @@
                       {% with choice=question|get_choice:option %}
                         {% if choice and choice != "X" %}
                           <li class="list-group-item">
-                            <strong>{{ option }}.</strong> {{ choice }}
+                            <strong>{{ option }}.</strong> {{ choice|safe_markdown_with_lang_for_options:question.category|safe }}
                             {% if option in selected_answer %}
                               <span class="badge bg-primary ms-2">你的選擇</span>
                             {% endif %}
@@ -179,22 +181,41 @@
     </div>
 
     <script>
-  document.addEventListener("DOMContentLoaded", function () {
-    // 自動開啟 modal（你原本的功能）
-    const modal = new bootstrap.Modal(document.getElementById('resultModal'));
-    modal.show();
+      document.addEventListener("DOMContentLoaded", function () {
+        // 自動開啟 modal（你原本的功能）
+        const modal = new bootstrap.Modal(document.getElementById('resultModal'));
+        modal.show();
 
-    // Collapse 區塊展開時自動捲動
-    const collapses = document.querySelectorAll('.collapse');
-    collapses.forEach(collapse => {
-      collapse.addEventListener('shown.bs.collapse', function () {
-        // 加一點延遲讓 collapse 動畫跑完
-        setTimeout(() => {
-          collapse.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 100);
+        // Collapse 區塊展開時自動捲動
+        const collapses = document.querySelectorAll('.collapse');
+        collapses.forEach(collapse => {
+          collapse.addEventListener('shown.bs.collapse', function () {
+            // 加一點延遲讓 collapse 動畫跑完
+            setTimeout(() => {
+              collapse.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
+          });
+        });
       });
-    });
-  });
-</script>
+
+      document.addEventListener("DOMContentLoaded", function () {
+        // 找所有有 data-arrow-toggle 的按鈕
+        document.querySelectorAll('[data-arrow-toggle]').forEach(function (btn) {
+          const targetSelector = btn.getAttribute("data-bs-target");
+          const arrowSpan = btn.querySelector(".arrow");
+          const collapseEl = document.querySelector(targetSelector);
+          const bsCollapse = new bootstrap.Collapse(collapseEl, { toggle: false });
+
+          // 切換時改箭頭內容
+          collapseEl.addEventListener("shown.bs.collapse", function () {
+            arrowSpan.textContent = "▲";
+          });
+
+          collapseEl.addEventListener("hidden.bs.collapse", function () {
+            arrowSpan.textContent = "▼";
+          });
+        });
+      });
+    </script>
   {% endif %}
 </div>
