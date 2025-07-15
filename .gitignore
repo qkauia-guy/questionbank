@@ -2,4 +2,32 @@
 **/__pycache__/
 .DS_Store
 db.sqlite3
-*.pyc
+*.
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+.venv/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# VSCode or PyCharm
+.vscode/
+.idea/
+
+# Local settings
+*.env
+*.sqlite3
+*.log
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# macOS or system files
+.DS_Store
+Thumbs.db

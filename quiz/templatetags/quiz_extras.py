@@ -51,7 +51,7 @@ def safe_markdown_with_lang(value, category):
         value = f"```{lang}\n{value.strip()}\n```"
 
     # ✅ 轉換為 HTML
-    html = markdown2.markdown(value, extras=["fenced-code-blocks"])
+    html = markdown2.markdown(value, extras=["fenced-code-blocks", "tables"])
     html = html.replace("<code>", f'<code class="language-{lang}">')
 
     return mark_safe(html)
@@ -104,7 +104,7 @@ def safe_markdown_ai(text):
     # 修復標題錯誤：#Title ➜ # Title
     cleaned = re.sub(r"(?m)^(\#{1,6})(\S)", r"\1 \2", text.strip())
 
-    html = markdown2.markdown(cleaned, extras=["fenced-code-blocks", "tables"])
+    html = markdown2.markdown(value, extras=["fenced-code-blocks", "tables"])
 
     # 加上預設語言 class
     html = re.sub(r"<pre><code>", '<pre><code class="language-plaintext">', html)

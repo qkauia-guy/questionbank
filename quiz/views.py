@@ -207,8 +207,17 @@ def get_numbers_by_chapter(request):
 def shuffle_choice_values(question):
     import random
 
-    # 解析正確答案，如 "ACD"
-    answer_letters = question.answer.strip().upper()
+    # ✅ 排除填充題（因為它沒有選項）
+    if question.is_fill_in:
+        return {}, ""  # 不需要選項，也沒有正確選項字母
+
+    # 確保答案是字串
+    if not isinstance(question.answer, str):
+        raise ValueError(
+            f"❌ answer 應為字串，但收到：{type(question.answer).__name__} -> {question.answer}"
+        )
+
+    answer_letters = question.answer.strip().upper().replace(",", "")
     if not all(c.isalpha() for c in answer_letters):
         raise ValueError(f"❌ 無效的答案格式：{question.answer}")
 
@@ -238,7 +247,7 @@ def shuffle_choice_values(question):
         shuffled[new_letter] = content
         old_to_new[old_letter] = new_letter
 
-    # 將多個正確答案對應轉換為新字母
+    # 轉換答案到新順序
     new_answer = "".join([old_to_new[l] for l in answer_letters if l in old_to_new])
 
     return shuffled, new_answer
