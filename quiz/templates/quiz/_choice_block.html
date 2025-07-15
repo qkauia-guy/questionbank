@@ -15,13 +15,6 @@
         <strong>{{ option }}.</strong>
         <div>{{ choice|safe_markdown_with_lang_for_options:question.category|safe }}</div>
       </div>
-
-      {% if not result and correct_answer and option in correct_answer %}
-        <div class="mt-2">
-          <strong>補充說明：</strong><br>
-          {{ ai_explanation|safe_markdown_with_lang:question.category|safe }}
-        </div>
-      {% endif %}
     </label>
   </div>
 {% endif %}

@@ -204,6 +204,46 @@ def get_numbers_by_chapter(request):
     return JsonResponse({"numbers": numbers})
 
 
+def shuffle_choice_values(question):
+    import random
+
+    # 解析正確答案，如 "ACD"
+    answer_letters = question.answer.strip().upper()
+    if not all(c.isalpha() for c in answer_letters):
+        raise ValueError(f"❌ 無效的答案格式：{question.answer}")
+
+    # 所有選項
+    choices = {
+        "A": question.choice_a,
+        "B": question.choice_b,
+        "C": question.choice_c,
+        "D": question.choice_d,
+        "E": question.choice_e,
+        "F": question.choice_f,
+        "G": question.choice_g,
+        "H": question.choice_h,
+    }
+
+    # 過濾為空或 "X" 的選項
+    valid_choices = {k: v for k, v in choices.items() if v and v.strip().upper() != "X"}
+
+    # 打亂順序
+    items = list(valid_choices.items())
+    random.shuffle(items)
+
+    shuffled = {}
+    old_to_new = {}
+    for idx, (old_letter, content) in enumerate(items):
+        new_letter = chr(ord("A") + idx)
+        shuffled[new_letter] = content
+        old_to_new[old_letter] = new_letter
+
+    # 將多個正確答案對應轉換為新字母
+    new_answer = "".join([old_to_new[l] for l in answer_letters if l in old_to_new])
+
+    return shuffled, new_answer
+
+
 # ========== 練習與模擬測驗 ==========
 
 
@@ -220,14 +260,15 @@ def mock_exam(request):
     if number == "None":
         number = None
 
+    model_name = request.session.get("ollama_model", "qwen2.5-coder:7b")
     ollama_enabled = request.session.get("ollama_enabled", True)
+
     result = None
     correct_answer = None
     explanation = None
     selected_answer = []
-    ai_explanation = None
     fill_input = ""
-    model_name = request.session.get("ollama_model", "qwen2.5-coder:7b")
+    ai_explanation = None
 
     questions = Question.objects.order_by("chapter", "number_order")
     if category:
@@ -241,6 +282,7 @@ def mock_exam(request):
     category_total = (
         Question.objects.filter(category=category).count() if category else 0
     )
+
     if total == 0:
         return render(
             request,
@@ -270,7 +312,6 @@ def mock_exam(request):
         question_id = request.POST.get("question_id")
         question = get_object_or_404(Question, id=question_id)
 
-        # ✅ 使用 session 中記錄的選項與正解
         shuffled_choices = request.session.get("shuffled_choices")
         correct_answer = request.session.get("correct_answer")
 
@@ -285,10 +326,7 @@ def mock_exam(request):
         result = check_answer(question, selected_answer, fill_input)
 
         if not result:
-            # ❗ 圖片題：只顯示手動解釋，不呼叫 AI
-            if question.image:
-                ai_explanation = None  # 不呼叫 AI
-            elif ollama_enabled:
+            if not question.image and ollama_enabled:
                 options_text = ""
                 for letter in "ABCDEFGH":
                     choice = getattr(question, f"choice_{letter.lower()}", None)
@@ -318,6 +356,7 @@ def mock_exam(request):
                 ai_explanation=ai_explanation if not result else None,
                 source="mock",
             )
+
     else:
         question = random.choice(questions)
         if not question.is_fill_in:
@@ -330,7 +369,7 @@ def mock_exam(request):
             request.session["shuffled_choices"] = None
             request.session["correct_answer"] = question.fill_answer
 
-    # 👇 下拉選單資料處理
+    # 下拉資料
     categories = Question.objects.values_list("category", flat=True).distinct()
     chapter_list = (
         Question.objects.filter(category=category)
@@ -339,8 +378,8 @@ def mock_exam(request):
         if category
         else []
     )
-    current_chapter = chapter or getattr(question, "chapter", None)
     number_list = []
+    current_chapter = chapter or getattr(question, "chapter", None)
     if category and current_chapter:
         raw_numbers = (
             Question.objects.filter(category=category, chapter=current_chapter)
@@ -349,22 +388,32 @@ def mock_exam(request):
         )
         number_list = sorted(raw_numbers, key=sort_key)
 
+    correct_answer = request.session.get("correct_answer")
+    correct_answer_list = list(correct_answer) if correct_answer else []
+    correct_choices_list = [
+        getattr(question, f"choice_{letter.lower()}", "")
+        for letter in correct_answer_list
+        if getattr(question, f"choice_{letter.lower()}", "").strip().upper() != "X"
+    ]
+
     return render(
         request,
         "quiz/mock_exam.html",
         {
             "question": question,
             "selected_answer": selected_answer,
+            "fill_input": fill_input,
             "result": result,
             "correct_answer": correct_answer,
+            "correct_answer_list": correct_answer_list,
+            "correct_choices_list": correct_choices_list,
             "explanation": explanation,
+            "ai_explanation": ai_explanation,
             "category": category,
             "chapter": chapter,
             "number": number,
-            "ai_explanation": ai_explanation,
             "chapter_list": chapter_list,
             "number_list": number_list,
-            "fill_input": fill_input,
             "categories": categories,
             "current_category": category,
             "category_total": category_total,
@@ -421,14 +470,13 @@ def chapter_practice(request):
             },
         )
 
-    # 若帶有 ?next=1，則進入下一題
+    # 切換題目邏輯
     if request.method == "GET" and request.GET.get("next") == "1":
         request.session["current_index"] = request.session.get("current_index", 0) + 1
         return redirect(
             f"{reverse('chapter_practice')}?{urlencode({'category': category or '', 'chapter': chapter or '', 'number': number or ''})}"
         )
 
-    # 目前第幾題
     current_index = request.session.get("current_index", 0)
     if current_index >= total:
         current_index = 0
@@ -440,13 +488,8 @@ def chapter_practice(request):
     ai_explanation = None
     question = questions[current_index]
 
-    # query 參數備用
     query_params = urlencode(
-        {
-            "category": category or "",
-            "chapter": chapter or "",
-            "number": number or "",
-        }
+        {"category": category or "", "chapter": chapter or "", "number": number or ""}
     )
     redirect_url = f"{reverse('chapter_practice')}?{query_params}"
 
@@ -463,26 +506,21 @@ def chapter_practice(request):
             request.session["current_index"] = max(current_index - 1, 0)
             return redirect(redirect_url)
 
-        # ✅ 作答處理
+        # ✅ 作答邏輯
         selected_answer = [a.upper() for a in request.POST.getlist("selected_answer")]
         fill_input = request.POST.get("fill_answer", "").strip()
         used_time = request.POST.get("used_time", 0)
 
         result = check_answer(question, selected_answer, fill_input)
-        correct_answer = question.answer
+        correct_answer = question.answer  # 如 AC
 
-        # ✅ AI 補充說明（僅答錯才顯示）
+        # ✅ AI 解釋（僅答錯）
         if not result:
             ollama_enabled = request.session.get("ollama_enabled", True)
             model_name = request.session.get("ollama_model", "qwen2.5-coder:7b")
 
             if not question.image and ollama_enabled:
-                options_text = ""
-                for letter in "ABCDEFGH":
-                    choice = getattr(question, f"choice_{letter.lower()}", None)
-                    if choice and choice.strip().upper() != "X":
-                        options_text += f"{letter}. {choice}\n"
-
+                options_text = generate_options_text(question)
                 ai_explanation = get_ai_feedback_ollama(
                     question_text=question.question_text,
                     user_ans=(
@@ -508,7 +546,7 @@ def chapter_practice(request):
                 source="mock",
             )
 
-    # 傳遞下拉選單資料
+    # 下拉選單
     chapter_list = (
         Question.objects.filter(category=category)
         .values_list("chapter", flat=True)
@@ -524,6 +562,15 @@ def chapter_practice(request):
         number_list = []
 
     categories = Question.objects.values_list("category", flat=True).distinct()
+
+    # ✅ 組出正確選項的文字（非 A/B/C 而是實際內容）
+    correct_answer_list = list(correct_answer) if correct_answer else []
+
+    correct_choices_list = [
+        getattr(question, f"choice_{letter.lower()}")
+        for letter in correct_answer_list
+        if getattr(question, f"choice_{letter.lower()}", "").strip().upper() != "X"
+    ]
 
     return render(
         request,
@@ -547,6 +594,8 @@ def chapter_practice(request):
             "category_total": category_total,
             "ollama_model": request.session.get("ollama_model", "qwen2.5-coder:7b"),
             "options": generate_options_text(question),
+            "correct_answer_list": correct_answer_list,
+            "correct_choices_list": correct_choices_list,
         },
     )
 
