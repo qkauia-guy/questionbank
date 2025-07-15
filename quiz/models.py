@@ -49,10 +49,19 @@ class QuestionRecord(models.Model):
     selected_answer = models.CharField(max_length=50, blank=True)
     used_time = models.IntegerField(default=0)
     ai_explanation = models.TextField(null=True, blank=True)
+    fill_answer = models.CharField(max_length=100, blank=True, default="")
     source = models.CharField(
         max_length=20,
         choices=[("mock", "隨機測驗"), ("chapter", "章節練習")],
         default="mock",
+    )
+
+    exam_session = models.ForeignKey(
+        "ExamSession",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="records",
     )
 
     def __str__(self):
@@ -70,3 +79,21 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.role}"
+
+
+class ExamSession(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    session_key = models.CharField(max_length=40, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    category = models.CharField(max_length=100)
+    finished_at = models.DateTimeField(null=True, blank=True)
+    total_questions = models.IntegerField(default=20)
+    score = models.FloatField(null=True, blank=True)  # 成績計算後填入
+    is_submitted = models.BooleanField(default=False)
+    current_index = models.IntegerField(default=0)
+
+    questions = models.ManyToManyField(Question, related_name="exam_sessions")
+
+    def __str__(self):
+        who = self.user.username if self.user else f"Session-{self.session_key}"
+        return f"{who} 的模擬考（{self.created_at.date()}）"
