@@ -837,9 +837,13 @@ def exam_question(request, session_id):
         fill_answer = request.POST.get("fill_answer", "").strip()
 
         # ✅ 答案判斷邏輯
-        correct_answer = current_question.answer.upper().split(",")
-        user_answer = [s.upper() for s in selected]
+        def clean_ans(ans):
+            return ans.strip().upper().replace("`", "")
+
+        correct_answer = [clean_ans(s) for s in current_question.answer.split(",")]
+        user_answer = [clean_ans(s) for s in selected]
         is_correct = set(user_answer) == set(correct_answer)
+        used_time = request.POST.get("used_time", 0)
 
         QuestionRecord.objects.create(
             user=request.user,
@@ -849,6 +853,7 @@ def exam_question(request, session_id):
             is_correct=is_correct,
             exam_session=session,
             source=f"模擬考（共 {session.total_questions} 題）",
+            used_time=used_time,
         )
         return redirect("exam_question", session_id=session.id)
 
