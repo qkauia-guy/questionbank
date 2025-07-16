@@ -1,0 +1,22 @@
+{% extends "base.html" %} {% block content %}
+<div class="container mt-5">
+  <h2>🎉 模擬考結束</h2>
+
+  <div class="alert alert-info mt-4">
+    👤 使用者：{{ user.username|default:"訪客" }}<br />
+    ✅ 正確：{{ correct_count }} / {{ total }} 題<br />
+    📈 正確率：{{ percentage }}%
+  </div>
+
+  <a
+    href="{% url 'exam_start' %}"
+    class="btn btn-outline-primary"
+    >重新測驗</a
+  >
+  <a
+    href="{% url 'exam_history' %}"
+    class="btn btn-outline-secondary ms-2"
+    >查看作答記錄</a
+  >
+</div>
+{% endblock %}

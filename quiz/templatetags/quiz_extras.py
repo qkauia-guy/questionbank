@@ -104,7 +104,7 @@ def safe_markdown_ai(text):
     # 修復標題錯誤：#Title ➜ # Title
     cleaned = re.sub(r"(?m)^(\#{1,6})(\S)", r"\1 \2", text.strip())
 
-    html = markdown2.markdown(value, extras=["fenced-code-blocks", "tables"])
+    html = markdown2.markdown(text, extras=["fenced-code-blocks", "tables"])
 
     # 加上預設語言 class
     html = re.sub(r"<pre><code>", '<pre><code class="language-plaintext">', html)
@@ -138,4 +138,6 @@ def mul(value, arg):
 
 @register.filter
 def dict_get(d, key):
+    if d is None:
+        return ""
     return d.get(key, "")

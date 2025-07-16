@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container my-4">
+  <h3 class="mb-4"><i class="bi bi-clipboard-check"></i> 模擬考測驗</h3>
+
+  <form method="post" class="card p-4 shadow-sm">
+    {% csrf_token %}
+
+    <div class="mb-3">
+      <label for="category" class="form-label">目前科目：</label>
+      <input type="text" readonly class="form-control" value="{{ current_category }}" placeholder="請在上方先選擇科目"/>
+    </div>
+
+    <div class="mb-3">
+      <label for="total_questions" class="form-label">
+        題目數量（最多 {{ total_available }} 題）
+      </label>
+      <select name="total_questions" id="total_questions" class="form-select" >
+        {% for num in question_options %}
+          {% if num == "all" %}
+            <option value="all">挑戰 全部（{{ total_available }} 題）</option>
+          {% else %}
+            <option value="{{ num }}" {% if num == 10 %}selected{% endif %}>挑戰 {{ num }} 題</option>
+          {% endif %}
+        {% endfor %}
+      </select>
+    </div>
+
+    <button type="submit" class="btn btn-primary">
+      <i class="bi bi-play-circle"></i> 開始模擬考
+    </button>
+  </form>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const maxQuestions = {{ total_available|default:0 }};
+    const select = document.getElementById("total_questions");
+    Array.from(select.options).forEach((opt) => {
+      if (parseInt(opt.value) > maxQuestions) {
+        opt.disabled = true;
+      }
+    });
+  });
+</script>
+
+{% endblock %}

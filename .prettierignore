@@ -1,0 +1,4 @@
+# 忽略 Django template 的 HTML 檔案
+**/templates/**/*.html
+**/templates/**/*.jinja
+**/*.django

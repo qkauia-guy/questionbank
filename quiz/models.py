@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from decimal import Decimal
+from django.utils.timezone import localtime
 
 
 class Question(models.Model):
@@ -97,3 +98,7 @@ class ExamSession(models.Model):
     def __str__(self):
         who = self.user.username if self.user else f"Session-{self.session_key}"
         return f"{who} 的模擬考（{self.created_at.date()}）"
+
+    @property
+    def finished_at_local(self):
+        return localtime(self.finished_at) if self.finished_at else None

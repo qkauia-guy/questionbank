@@ -5,7 +5,6 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
-from django.utils.timezone import localtime
 from .models import Question, QuestionRecord
 from django.urls import reverse
 from django.http import JsonResponse
@@ -14,7 +13,9 @@ from django.contrib import messages
 from urllib.parse import urlencode, urlparse, parse_qs
 from django.utils.http import urlencode
 from django.views.decorators.csrf import csrf_exempt
-
+from .models import ExamSession
+from django.utils.timezone import localtime
+from django.utils import timezone
 
 # ========== 工具函式 ==========
 
@@ -90,27 +91,6 @@ def get_chapters_by_category(request):
         .distinct()
     )
     return JsonResponse({"chapters": chapters})
-
-
-# def get_ai_feedback_ollama(question_text, user_ans, correct_ans, category=None):
-#     category_line = f"這題的範圍是「{category}」\n" if category else ""
-
-#     prompt = f"""
-#     這是一題選擇題，請幫我解釋這題的答案為什麼不是「{user_ans}」，而是「{correct_ans}」。
-#     {category_line}內容如下：
-
-#     {question_text}
-#     """
-#     try:
-#         response = requests.post(
-#             "http://localhost:11434/api/generate",
-#             json={"model": "qwen2.5-coder:3b", "prompt": prompt, "stream": False},
-#             timeout=90,
-#         )
-#         data = response.json()
-#         return data.get("response", "⚠️ AI 沒有回應。")
-#     except Exception as e:
-#         return f"⚠️ AI 請求錯誤：{e}"
 
 
 def get_ai_feedback_ollama(
@@ -790,3 +770,140 @@ def generate_options_text(question):
         if choice and choice.upper() != "X":
             options_text += f"{letter}. {choice}\n"
     return options_text
+
+
+@login_required
+def exam_start(request):
+    category = request.GET.get("category", "")
+    categories = Question.objects.values_list("category", flat=True).distinct()
+
+    available_questions = Question.objects.filter(category=category)
+    total_available = available_questions.count()
+
+    # ➤ 題目數選項（只選不超過的，並加入 "all"）
+    question_options = [n for n in [5, 15, 30, 45] if n <= total_available]
+    if total_available > 0:
+        question_options.append("all")
+
+    if request.method == "POST":
+        total_questions = request.POST.get("total_questions", "10")
+
+        # ➤ 若選擇 "all"，則取全部題目
+        if total_questions == "all":
+            total_to_draw = total_available
+        else:
+            total_to_draw = min(int(total_questions), total_available)
+
+        questions = list(available_questions.order_by("?")[:total_to_draw])
+
+        session = ExamSession.objects.create(
+            user=request.user,
+            category=category,
+            total_questions=total_to_draw,
+        )
+        session.questions.set(questions)
+        return redirect("exam_question", session_id=session.id)
+
+    return render(
+        request,
+        "quiz/exam_start.html",
+        {
+            "categories": categories,
+            "current_category": category,
+            "total_available": total_available,
+            "question_options": question_options,  # 傳給 template 使用
+        },
+    )
+
+
+@login_required
+def exam_question(request, session_id):
+    session = get_object_or_404(ExamSession, id=session_id, user=request.user)
+    questions = session.questions.all().order_by("id")
+    total = questions.count()
+
+    answered_question_ids = QuestionRecord.objects.filter(
+        exam_session=session
+    ).values_list("question_id", flat=True)
+    current_index = len(answered_question_ids)
+
+    if current_index >= total:
+        return redirect("exam_submit", session_id=session.id)
+
+    current_question = questions[current_index]
+
+    if request.method == "POST":
+        selected = request.POST.getlist("selected_answer")
+        fill_answer = request.POST.get("fill_answer", "").strip()
+
+        # ✅ 答案判斷邏輯
+        correct_answer = current_question.answer.upper().split(",")
+        user_answer = [s.upper() for s in selected]
+        is_correct = set(user_answer) == set(correct_answer)
+
+        QuestionRecord.objects.create(
+            user=request.user,
+            question=current_question,
+            selected_answer=",".join(user_answer),
+            fill_answer=fill_answer,
+            is_correct=is_correct,
+            exam_session=session,
+            source=f"模擬考（共 {session.total_questions} 題）",
+        )
+        return redirect("exam_question", session_id=session.id)
+
+    progress = round((current_index + 1) / total * 100)
+
+    return render(
+        request,
+        "quiz/exam_question.html",
+        {
+            "question": current_question,
+            "current_index": current_index,
+            "total_question_count": total,
+            "progress": progress,
+        },
+    )
+
+
+@login_required
+def exam_submit(request, session_id):
+    session = get_object_or_404(ExamSession, id=session_id, user=request.user)
+    total = session.total_questions
+    records = session.records.all()
+    correct = records.filter(is_correct=True).count()
+    percentage = round(correct / total * 100, 2) if total else 0
+
+    if not session.is_submitted:
+        session.score = percentage
+        session.finished_at = timezone.now()
+        session.is_submitted = True
+        session.save()
+
+    return redirect("exam_result", session_id=session.id)
+
+
+@login_required
+def exam_result(request, session_id):
+    session = get_object_or_404(ExamSession, id=session_id, user=request.user)
+    records = session.records.all()
+    total = session.total_questions
+    correct = records.filter(is_correct=True).count()
+    percentage = round(correct / total * 100, 2) if total else 0
+
+    past_sessions = ExamSession.objects.filter(
+        user=request.user, is_submitted=True
+    ).order_by("-created_at")
+
+    return render(
+        request,
+        "quiz/exam_result.html",
+        {
+            "session": session,
+            "records": records,
+            "correct_count": correct,
+            "total": total,
+            "percentage": percentage,
+            "past_sessions": past_sessions,
+        },
+    )

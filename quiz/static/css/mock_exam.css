@@ -66,7 +66,8 @@ table {
   color: #333;
 }
 
-th, td {
+th,
+td {
   border: 1px solid #ccc;
   padding: 8px;
   text-align: left;
@@ -83,10 +84,22 @@ th, td {
 }
 
 /* ========== ✅ 狀態文字色彩 ========== */
-.text-correct    { color: #28a745 !important; font-weight: bold; }
-.text-wrong      { color: #dc3545 !important; font-weight: bold; }
-.text-slow       { color: #fd7e14 !important; font-weight: bold; }
-.text-very-slow  { color: #dc3545 !important; font-weight: bold; }
+.text-correct {
+  color: #28a745 !important;
+  font-weight: bold;
+}
+.text-wrong {
+  color: #dc3545 !important;
+  font-weight: bold;
+}
+.text-slow {
+  color: #fd7e14 !important;
+  font-weight: bold;
+}
+.text-very-slow {
+  color: #dc3545 !important;
+  font-weight: bold;
+}
 
 /* ========== 🧠 答案解析區塊 ========== */
 .explanation {
@@ -118,7 +131,8 @@ code {
   color: #d63384;
 }
 
-pre:hover, code:hover {
+pre:hover,
+code:hover {
   background-color: #e9efff;
 }
 
@@ -227,7 +241,7 @@ pre:hover, code:hover {
 }
 
 .progress-bar {
-  background-color: rgba(255, 255, 255, 0.2);  /* 半透明白色進度 */
+  background-color: rgba(255, 255, 255, 0.2); /* 半透明白色進度 */
   transition: width 0.4s ease;
 }
 
@@ -307,7 +321,7 @@ li {
 
 /* 滑塊圓球 */
 .slider::before {
-  content: "";
+  content: '';
   position: absolute;
   height: 20px;
   width: 20px;
@@ -338,16 +352,10 @@ li {
   border-radius: 4px;
   border: 1px solid #ccc;
   max-width: 300px; /* 可選 */
-
 }
-
 
 /* ========== 📱 手機響應式調整 ========== */
 @media (max-width: 768px) {
-  body {
-    padding: 0px;
-  }
-
   #mobileSearchBar {
     display: none;
   }
@@ -361,12 +369,12 @@ li {
   }
 
   .question-card {
-    width: 100vw;
-    border-radius: 6px;
+    width: 100%;
+    margin: 0 auto;
   }
 
   .question-card .form-check {
-    padding: 6px 10px;
+    padding: 6px 6px;
     margin-bottom: 10px;
     font-size: 14px;
   }
@@ -397,7 +405,6 @@ li {
   }
 
   .form-check-input {
-    margin-right: 8px;
   }
 
   pre {
@@ -423,7 +430,7 @@ li {
     line-height: 48px;
     font-size: 20px;
     cursor: pointer;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
   }
 
   .mobile-search {
@@ -437,7 +444,7 @@ li {
     border-radius: 10px;
     z-index: 998;
     padding: 8px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   }
 
   .mobile-search.show {
@@ -453,7 +460,6 @@ li {
     width: 100%;
     margin-left: 0;
     margin-right: 0;
-    padding: 2px;
     border-radius: 8px;
     font-size: 14px;
   }
@@ -533,8 +539,6 @@ li {
   .switch input:checked + .slider::before {
     transform: translateX(18px);
   }
-
-
 
   .model-select {
     display: none;

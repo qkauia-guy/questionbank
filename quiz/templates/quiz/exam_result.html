@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container mt-4">
+  <h3>🎉 模擬考結果</h3>
+
+  <div class="alert alert-success mt-3">
+    👤 使用者：{{ request.user.username }}<br>
+    🗂 類別：{{ session.category }}<br>
+    ✅ 正確：{{ correct_count }} / {{ total }} 題<br>
+    📈 正確率：<strong>{{ percentage }}%</strong>
+  </div>
+
+  <h5 class="mt-5">📚 歷史模擬考紀錄</h5>
+  <table class="table table-bordered align-middle text-center">
+    <thead class="table-light">
+      <tr>
+        <th>🗂 類別</th>
+        <th>📅 日期</th>
+        <th>✅ 分數</th>
+        <th>📋 題數</th>
+        <th>⏱ 完成時間</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in past_sessions %}
+      <tr>
+        <td>{{ s.category }}</td>
+        <td>{{ s.created_at|date:"Y-m-d H:i" }}</td>
+        <td>{{ s.score|floatformat:1 }}%</td>
+        <td>{{ s.total_questions }}</td>
+        <td>
+          {% if s.finished_at %}
+            {{ s.finished_at_local|date:"Y/m/d H:i" }} 內完成
+          {% else %}
+            -
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="mt-3">
+    <a href="{% url 'exam_start' %}" class="btn btn-primary">🔁 重新模擬考</a>
+  </div>
+</div>
+
+{% endblock %}

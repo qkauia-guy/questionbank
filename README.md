@@ -1,5 +1,3 @@
-
-
 # Quiz Question Bank
 
 這是一個使用 Django 建立的線上題庫系統，支援選擇題、填空題、小畫家作答、章節分類與 AI 解釋功能。
@@ -18,17 +16,17 @@
 
 ### Question (題目)
 
-| 欄位名稱         | 資料型態               | 說明                          |
-|------------------|------------------------|-------------------------------|
-| `id`             | `AutoField`            | 主鍵，自動生成                |
-| `question_text`  | `TextField`            | 題目內容                      |
-| `answer`         | `CharField(max_length=10)` | 正確答案（例如 AB）     |
-| `chapter`        | `CharField(max_length=100)` | 所屬章節                 |
-| `number`         | `CharField(max_length=20)` | 題號（支援 1 - 1 格式） |
-| `explanation`    | `TextField`            | 答案說明                      |
-| `require_order`  | `BooleanField`         | 是否要求作答順序              |
-| `is_fill_in`     | `BooleanField`         | 是否為填空題                  |
-| `fill_answer`    | `CharField(max_length=100, blank=True)` | 填空正確答案     |
+| 欄位名稱        | 資料型態                                | 說明                    |
+| --------------- | --------------------------------------- | ----------------------- |
+| `id`            | `AutoField`                             | 主鍵，自動生成          |
+| `question_text` | `TextField`                             | 題目內容                |
+| `answer`        | `CharField(max_length=10)`              | 正確答案（例如 AB）     |
+| `chapter`       | `CharField(max_length=100)`             | 所屬章節                |
+| `number`        | `CharField(max_length=20)`              | 題號（支援 1 - 1 格式） |
+| `explanation`   | `TextField`                             | 答案說明                |
+| `require_order` | `BooleanField`                          | 是否要求作答順序        |
+| `is_fill_in`    | `BooleanField`                          | 是否為填空題            |
+| `fill_answer`   | `CharField(max_length=100, blank=True)` | 填空正確答案            |
 
 ## 安裝與啟動方式
 
@@ -72,12 +70,19 @@ python manage.py loaddata questions.json
 python manage.py loaddata drawings.json
 ```
 
+# ⚠️ 注意事項：
 
+因為 ExamSession 資料表已經存在，請在執行 migration 時使用：
+`python manage.py migrate quiz --fake`
+或是
+
+- `python manage.py migrate quiz 0020 --fake`
+- `python manage.py migrate quiz 0021 --fake`
 
 作者：艸先生
 
 - 資料庫題號自動更新
-`python manage.py update_number_order`
+  `python manage.py update_number_order`
 
 - 匯入資料
-`python manage.py shell < import_questions.py`
+  `python manage.py shell < import_questions.py`

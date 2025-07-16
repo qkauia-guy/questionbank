@@ -109,30 +109,43 @@
 
       <!-- 功能按鈕 -->
       <div class="row">
-        <div class="col-12 d-flex flex-wrap gap-2">
-          <a href="{% url 'review_wrong_questions' %}?category={{ current_category }}" 
-            class="btn btn-sm {% if request.path == '/review/' %}btn-warning{% else %}btn-outline-warning{% endif %}">
+        <div class="col-12 d-flex flex-wrap gap-1">
+          <a
+            href="{% url 'review_wrong_questions' %}?category={{ current_category }}"
+            class="btn btn-sm {% if request.path == '/review/' %}btn-warning{% else %}btn-outline-warning{% endif %}"
+          >
             <i class="bi bi-journal-x"></i> 複習錯題
           </a>
 
-          <a href="{% url 'exam_history' %}?category={{ current_category }}" 
-            class="btn btn-sm {% if request.path == '/history/' %}btn-info{% else %}btn-outline-info{% endif %}">
+          <a
+            href="{% url 'exam_history' %}?category={{ current_category }}"
+            class="btn btn-sm {% if request.path == '/history/' %}btn-info{% else %}btn-outline-info{% endif %}"
+          >
             <i class="bi bi-clock-history"></i> 測驗記錄
           </a>
 
-          <a href="{% url 'mock_exam' %}?category={{ current_category }}" 
-            class="btn btn-sm {% if request.path == '/mock/' %}btn-success{% else %}btn-outline-success{% endif %}">
+          <a
+            href="{% url 'mock_exam' %}?category={{ current_category }}"
+            class="btn btn-sm {% if request.path == '/mock/' %}btn-success{% else %}btn-outline-success{% endif %}"
+          >
             <i class="bi bi-play-circle"></i> 隨機練習
           </a>
 
-          <a href="{% url 'chapter_practice' %}?category={{ current_category }}" 
-            class="btn btn-sm {% if request.path == '/practice/' %}btn-success{% else %}btn-outline-success{% endif %}">
+          <a
+            href="{% url 'chapter_practice' %}?category={{ current_category }}"
+            class="btn btn-sm {% if request.path == '/practice/' %}btn-success{% else %}btn-outline-success{% endif %}"
+          >
             <i class="bi bi-book"></i> 章節練習
+          </a>
+
+          <a
+            href="{% url 'exam_start' %}?category={{ current_category|default:'' }}"
+            class="btn btn-sm {% if request.path|slice:":6" == "/exam/" %}btn-success{% else %}btn-outline-primary{% endif %}"
+          >
+            <i class="bi bi-clipboard-check"></i> 模擬考
           </a>
         </div>
       </div>
-    </div>
-    
 
     <!-- ✅ 主要內容區塊 -->
     <main class="container my-auto">
