@@ -5,7 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Question, QuestionRecord
+from .models import Question, QuestionRecord, QuestionBookmark
 from django.urls import reverse
 from django.http import JsonResponse
 from django.views.decorators.http import require_GET, require_POST
@@ -16,8 +16,15 @@ from django.views.decorators.csrf import csrf_exempt
 from .models import ExamSession
 from django.utils.timezone import localtime
 from django.utils import timezone
+from opencc import OpenCC
+
 
 # ========== 工具函式 ==========
+cc = OpenCC("s2t")  # 簡體轉繁體
+
+
+def convert_to_traditional(text):
+    return cc.convert(text)
 
 
 def check_answer(question, selected_answer, fill_input):
@@ -102,6 +109,7 @@ def get_ai_feedback_ollama(
     options="",
     model_name="qwen2.5-coder:7b",
 ):
+    print(f"🧪 DEBUG：使用模型 = {model_name}")
     """
     回傳 AI 解釋說明文字，包含類別強化提示
     """
@@ -146,7 +154,7 @@ def get_ai_feedback_ollama(
                 "prompt": prompt,
                 "stream": False,
             },
-            timeout=90,
+            timeout=180,
         )
         data = response.json()
         return f"🤖 本次回答由「{model_name}」模型生成：\n\n{data.get('response', '⚠️ AI 沒有回應。')}"
@@ -315,7 +323,7 @@ def mock_exam(request):
         result = check_answer(question, selected_answer, fill_input)
 
         if not result:
-            if not question.image and ollama_enabled:
+            if ollama_enabled and not question.image:
                 options_text = ""
                 for letter in "ABCDEFGH":
                     choice = getattr(question, f"choice_{letter.lower()}", None)
@@ -328,10 +336,15 @@ def mock_exam(request):
                         fill_input if question.is_fill_in else "".join(selected_answer)
                     ),
                     correct_ans=correct_answer,
-                    question=question.category,
+                    question=question,
                     options=options_text,
                     model_name=model_name,
                 )
+                ai_explanation = convert_to_traditional(ai_explanation)
+            else:
+                ai_explanation = convert_to_traditional(question.explanation)
+        else:
+            ai_explanation = None
 
         if request.user.is_authenticated:
             QuestionRecord.objects.create(
@@ -385,6 +398,14 @@ def mock_exam(request):
         if getattr(question, f"choice_{letter.lower()}", "").strip().upper() != "X"
     ]
 
+    is_favorited = QuestionBookmark.objects.filter(
+        user=request.user, question=question, bookmark_type="favorite"
+    ).exists()
+
+    is_flagged = QuestionBookmark.objects.filter(
+        user=request.user, question=question, bookmark_type="flag"
+    ).exists()
+
     return render(
         request,
         "quiz/mock_exam.html",
@@ -408,6 +429,8 @@ def mock_exam(request):
             "category_total": category_total,
             "shuffled_choices": request.session.get("shuffled_choices"),
             "ollama_model": model_name,
+            "is_favorited": is_favorited,
+            "is_flagged": is_flagged,
         },
     )
 
@@ -508,7 +531,7 @@ def chapter_practice(request):
             ollama_enabled = request.session.get("ollama_enabled", True)
             model_name = request.session.get("ollama_model", "qwen2.5-coder:7b")
 
-            if not question.image and ollama_enabled:
+            if ollama_enabled and not question.image:
                 options_text = generate_options_text(question)
                 ai_explanation = get_ai_feedback_ollama(
                     question_text=question.question_text,
@@ -520,7 +543,9 @@ def chapter_practice(request):
                     options=options_text,
                     model_name=model_name,
                 )
-
+                ai_explanation = convert_to_traditional(ai_explanation)  # ✅ 正確轉繁體
+            else:
+                ai_explanation = convert_to_traditional(question.explanation)
         # ✅ 建立答題紀錄
         if request.user.is_authenticated:
             QuestionRecord.objects.create(
@@ -560,6 +585,13 @@ def chapter_practice(request):
         for letter in correct_answer_list
         if getattr(question, f"choice_{letter.lower()}", "").strip().upper() != "X"
     ]
+    is_favorited = QuestionBookmark.objects.filter(
+        user=request.user, question=question, bookmark_type="favorite"
+    ).exists()
+
+    is_flagged = QuestionBookmark.objects.filter(
+        user=request.user, question=question, bookmark_type="flag"
+    ).exists()
 
     return render(
         request,
@@ -585,6 +617,8 @@ def chapter_practice(request):
             "options": generate_options_text(question),
             "correct_answer_list": correct_answer_list,
             "correct_choices_list": correct_choices_list,
+            "is_favorited": is_favorited,
+            "is_flagged": is_flagged,
         },
     )
 
@@ -627,6 +661,7 @@ def exam_history(request):
 def review_wrong_questions(request):
     category = request.GET.get("category")
 
+    # 查找使用者的錯題紀錄
     wrong_records = (
         QuestionRecord.objects.filter(user=request.user, is_correct=False)
         .select_related("question")
@@ -635,8 +670,26 @@ def review_wrong_questions(request):
     if category:
         wrong_records = wrong_records.filter(question__category=category)
 
-    questions = [record.question for record in wrong_records]
+    # 只保留 question 存在的紀錄
+    questions = []
+    for record in wrong_records:
+        if record.question:
+            questions.append(record.question)
+
+    # 分類選單
     categories = Question.objects.values_list("category", flat=True).distinct()
+
+    # 建立每一題的收藏與爭議狀態對照表
+    bookmark_status = {}
+    for q in questions:
+        bookmark_status[q.id] = {
+            "is_favorited": QuestionBookmark.objects.filter(
+                user=request.user, question=q, bookmark_type="favorite"
+            ).exists(),
+            "is_flagged": QuestionBookmark.objects.filter(
+                user=request.user, question=q, bookmark_type="flag"
+            ).exists(),
+        }
 
     return render(
         request,
@@ -646,6 +699,7 @@ def review_wrong_questions(request):
             "records": wrong_records,
             "categories": categories,
             "current_category": category,
+            "bookmark_status": bookmark_status,
         },
     )
 
@@ -664,8 +718,10 @@ def clear_ollama_notice(request):
 
 def set_ollama_model(request):
     model = request.GET.get("model")
+    print(f"🧪 後端收到模型設定：{model}")
     if model:
         request.session["ollama_model"] = model
+        print("🧪 已寫入 session")
     return JsonResponse({"status": "ok", "model": model})
 
 
@@ -910,5 +966,46 @@ def exam_result(request, session_id):
             "total": total,
             "percentage": percentage,
             "past_sessions": past_sessions,
+        },
+    )
+
+
+@login_required
+@require_POST
+def toggle_bookmark(request):
+    question_id = request.POST.get("question_id")
+    bookmark_type = request.POST.get("bookmark_type")  # 'favorite' 或 'flag'
+
+    if bookmark_type not in ["favorite", "flag"]:
+        return JsonResponse({"error": "❌ 無效的類型"}, status=400)
+
+    question = get_object_or_404(Question, id=question_id)
+
+    bookmark, created = QuestionBookmark.objects.get_or_create(
+        user=request.user, question=question, bookmark_type=bookmark_type
+    )
+
+    if not created:
+        bookmark.delete()
+        return JsonResponse({"status": "removed"})
+    else:
+        return JsonResponse({"status": "added"})
+
+
+@login_required
+def bookmark_list(request):
+    favorite_bookmarks = QuestionBookmark.objects.filter(
+        user=request.user, bookmark_type="favorite"
+    ).select_related("question")
+    flagged_bookmarks = QuestionBookmark.objects.filter(
+        user=request.user, bookmark_type="flag"
+    ).select_related("question")
+
+    return render(
+        request,
+        "quiz/bookmark_list.html",
+        {
+            "favorite_questions": [b.question for b in favorite_bookmarks],
+            "flagged_questions": [b.question for b in flagged_bookmarks],
         },
     )

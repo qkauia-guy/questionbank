@@ -34,4 +34,6 @@ urlpatterns = [
     path("exam/<int:session_id>/", views.exam_question, name="exam_question"),
     path("exam/<int:session_id>/submit/", views.exam_submit, name="exam_submit"),
     path("exam/result/<int:session_id>/", views.exam_result, name="exam_result"),
+    path("bookmarks/", views.bookmark_list, name="bookmark_list"),
+    path("toggle_bookmark/", views.toggle_bookmark, name="toggle_bookmark"),
 ]

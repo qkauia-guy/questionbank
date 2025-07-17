@@ -2,6 +2,24 @@
 {% load markdown_deux_tags %}
 
 <div class="question-card my-3">
+  <div class="d-flex gap-2 mb-3">
+  <!-- 收藏按鈕 -->
+    <button class="btn btn-sm toggle-bookmark 
+      {% if is_favorited %}btn-success{% else %}btn-outline-primary{% endif %}"
+      data-question-id="{{ question.id }}"
+      data-bookmark-type="favorite">
+      {% if is_favorited %}★ 已加收藏{% else %}☆ 加入收藏{% endif %}
+    </button>
+
+    <!-- 爭議題按鈕 -->
+    <button class="btn btn-sm toggle-bookmark
+      {% if is_flagged %}btn-success{% else %}btn-outline-danger{% endif %}"
+      data-question-id="{{ question.id }}"
+      data-bookmark-type="flag">
+      {% if is_flagged %}◉ 已加爭議{% else %}◎ 加入爭議{% endif %}
+    </button>
+
+</div>
   <form method="post">
     {% csrf_token %}
     <input type="hidden" name="question_id" value="{{ question.id }}" />
@@ -198,3 +216,57 @@
     </script>
   {% endif %}
 </div>
+{% block extra_scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  console.log("✅ JS 已載入");
+
+  const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute("content");
+
+  document.querySelectorAll(".toggle-bookmark").forEach((btn) => {
+    btn.addEventListener("click", function (e) {
+      e.preventDefault();
+      const questionId = this.dataset.questionId;
+      const bookmarkType = this.dataset.bookmarkType;
+
+      fetch("{% url 'toggle_bookmark' %}", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "X-CSRFToken": csrfToken,
+        },
+        body: new URLSearchParams({
+          question_id: questionId,
+          bookmark_type: bookmarkType,
+        }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          const statusDiv = document.getElementById("bookmark-status");
+
+          const isFavorite = bookmarkType === "favorite";
+
+          if (data.status === "added") {
+            btn.classList.remove(isFavorite ? "btn-outline-primary" : "btn-outline-danger");
+            btn.classList.add("btn-success");
+            btn.innerText = isFavorite ? "★ 已收藏" : "◉ 已標記";
+            if (statusDiv) {
+              statusDiv.innerText = isFavorite ? "✅ 已加入收藏" : "✅ 已標記爭議題";
+            }
+          } else if (data.status === "removed") {
+            btn.classList.remove("btn-success");
+            btn.classList.add(isFavorite ? "btn-outline-primary" : "btn-outline-danger");
+            btn.innerText = isFavorite ? "☆ 收藏" : "◎ 爭議題";
+            if (statusDiv) {
+              statusDiv.innerText = isFavorite ? "🗑 已取消收藏" : "🗑 已取消爭議標記";
+            }
+          }
+        })
+        .catch((err) => {
+          alert("⚠️ 操作失敗：" + err);
+        });
+    });
+  });
+});
+</script>
+{% endblock %}

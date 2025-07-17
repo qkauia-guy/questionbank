@@ -10,6 +10,14 @@ html body .markdown-content h3 {
   line-height: 1.4;
 }
 
+h2 {
+  font-size: 1rem !important;
+}
+
+h2 strong {
+  color: #129e29;
+}
+
 /* 頁面整體樣式 */
 body {
   padding: 3px;

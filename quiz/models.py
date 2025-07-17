@@ -102,3 +102,21 @@ class ExamSession(models.Model):
     @property
     def finished_at_local(self):
         return localtime(self.finished_at) if self.finished_at else None
+
+
+class QuestionBookmark(models.Model):
+    BOOKMARK_TYPES = (
+        ("favorite", "收藏"),
+        ("flag", "爭議"),
+    )
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    question = models.ForeignKey("Question", on_delete=models.CASCADE)
+    bookmark_type = models.CharField(max_length=10, choices=BOOKMARK_TYPES)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("user", "question", "bookmark_type")
+
+    def __str__(self):
+        return f"{self.user.username} - {self.bookmark_type} - {self.question}"

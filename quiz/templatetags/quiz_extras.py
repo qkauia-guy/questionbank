@@ -93,20 +93,27 @@ def safe_markdown_with_lang_for_options(text, category):
 
 
 @register.filter
+@register.filter
 def safe_markdown_ai(text):
     import markdown2
     from django.utils.safestring import mark_safe
     import re
+    from opencc import OpenCC
 
     if not text or not isinstance(text, str):
         return ""
 
-    # 修復標題錯誤：#Title ➜ # Title
+    # Step 1：簡轉繁
+    cc = OpenCC("s2t")
+    text = cc.convert(text)
+
+    # Step 2：清理 markdown 標題
     cleaned = re.sub(r"(?m)^(\#{1,6})(\S)", r"\1 \2", text.strip())
 
-    html = markdown2.markdown(text, extras=["fenced-code-blocks", "tables"])
+    # Step 3：Markdown 轉 HTML
+    html = markdown2.markdown(cleaned, extras=["fenced-code-blocks", "tables"])
 
-    # 加上預設語言 class
+    # Step 4：補上預設語言 class
     html = re.sub(r"<pre><code>", '<pre><code class="language-plaintext">', html)
 
     return mark_safe(html)
