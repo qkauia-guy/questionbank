@@ -2,8 +2,11 @@
 {% block content %}
 
 <div class="container my-4">
-  <h3 class="mb-4"><i class="bi bi-clipboard-check"></i> 模擬考測驗</h3>
-
+  {% if last_session %}
+    <a href="{% url 'exam_result' last_session.id %}" class="btn btn-primary mb-3">
+      模擬考結果
+    </a>
+  {% endif %}
   <form method="post" class="card p-4 shadow-sm">
     {% csrf_token %}
 

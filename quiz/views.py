@@ -266,6 +266,7 @@ def mock_exam(request):
     selected_answer = []
     fill_input = ""
     ai_explanation = None
+    used_time = int(request.POST.get("used_time", 0))
 
     questions = Question.objects.order_by("chapter", "number_order")
     if category:
@@ -431,6 +432,7 @@ def mock_exam(request):
             "ollama_model": model_name,
             "is_favorited": is_favorited,
             "is_flagged": is_flagged,
+            "used_time": used_time,
         },
     )
 
@@ -830,35 +832,58 @@ def generate_options_text(question):
 
 @login_required
 def exam_start(request):
-    category = request.GET.get("category", "")
     categories = Question.objects.values_list("category", flat=True).distinct()
+    category = request.GET.get("category") or request.session.get("exam_category")
 
-    available_questions = Question.objects.filter(category=category)
-    total_available = available_questions.count()
+    if not category:
+        return render(
+            request,
+            "quiz/exam_start.html",
+            {
+                "categories": categories,
+                "current_category": None,
+                "total_available": 0,
+                "question_options": [],
+                "last_session": None,
+            },
+        )
 
-    # ➤ 題目數選項（只選不超過的，並加入 "all"）
-    question_options = [n for n in [5, 15, 30, 45] if n <= total_available]
-    if total_available > 0:
+    request.session["exam_category"] = category
+    all_questions = Question.objects.filter(category=category).order_by("number_order")
+    total_available = all_questions.count()
+
+    # ✅ 固定選項：[5, 15, 30, 50, 'all']，但只包含 total_available 以上的選項
+    question_options = [x for x in [5, 15, 30, 50] if total_available >= x]
+    if total_available >= 1:
         question_options.append("all")
 
     if request.method == "POST":
-        total_questions = request.POST.get("total_questions", "10")
+        total = request.POST.get("total_questions")
 
-        # ➤ 若選擇 "all"，則取全部題目
-        if total_questions == "all":
-            total_to_draw = total_available
+        if total == "all":
+            total = total_available
         else:
-            total_to_draw = min(int(total_questions), total_available)
+            try:
+                total = int(total)
+            except (ValueError, TypeError):
+                return redirect("exam_start")  # fallback
 
-        questions = list(available_questions.order_by("?")[:total_to_draw])
+        selected_questions = list(all_questions.order_by("?")[:total])
 
         session = ExamSession.objects.create(
             user=request.user,
             category=category,
-            total_questions=total_to_draw,
+            total_questions=total,
         )
-        session.questions.set(questions)
+        session.questions.set(selected_questions)
+
         return redirect("exam_question", session_id=session.id)
+
+    last_session = (
+        ExamSession.objects.filter(user=request.user, is_submitted=True)
+        .order_by("-created_at")
+        .first()
+    )
 
     return render(
         request,
@@ -867,7 +892,8 @@ def exam_start(request):
             "categories": categories,
             "current_category": category,
             "total_available": total_available,
-            "question_options": question_options,  # 傳給 template 使用
+            "question_options": question_options,
+            "last_session": last_session,
         },
     )
 
@@ -877,6 +903,7 @@ def exam_question(request, session_id):
     session = get_object_or_404(ExamSession, id=session_id, user=request.user)
     questions = session.questions.all().order_by("id")
     total = questions.count()
+    used_time = int(request.POST.get("used_time", 0))
 
     answered_question_ids = QuestionRecord.objects.filter(
         exam_session=session
@@ -888,18 +915,34 @@ def exam_question(request, session_id):
 
     current_question = questions[current_index]
 
+    # ✅ Step 1: 若是 GET，打亂選項並存入 session
+    if request.method == "GET":
+        if not current_question.is_fill_in:
+            shuffled_choices, new_answer = shuffle_choice_values(current_question)
+            request.session["exam_shuffled_choices"] = shuffled_choices
+            request.session["exam_correct_answer"] = new_answer
+            current_question.answer = new_answer  # 用新答案來比對
+        else:
+            request.session["exam_shuffled_choices"] = None
+            request.session["exam_correct_answer"] = current_question.fill_answer
+
     if request.method == "POST":
         selected = request.POST.getlist("selected_answer")
         fill_answer = request.POST.get("fill_answer", "").strip()
 
-        # ✅ 答案判斷邏輯
         def clean_ans(ans):
             return ans.strip().upper().replace("`", "")
 
-        correct_answer = [clean_ans(s) for s in current_question.answer.split(",")]
-        user_answer = [clean_ans(s) for s in selected]
-        is_correct = set(user_answer) == set(correct_answer)
-        used_time = request.POST.get("used_time", 0)
+        # ✅ Step 2: 改為從 session 讀取正確答案
+        correct_answer = sorted(
+            [c for c in clean_ans(request.session.get("exam_correct_answer", ""))]
+        )
+        user_answer = sorted([clean_ans(s) for s in selected])
+
+        if current_question.require_order:
+            is_correct = user_answer == correct_answer
+        else:
+            is_correct = set(user_answer) == set(correct_answer)
 
         QuestionRecord.objects.create(
             user=request.user,
@@ -915,6 +958,7 @@ def exam_question(request, session_id):
 
     progress = round((current_index + 1) / total * 100)
 
+    # ✅ Step 3: 傳給 template 顯示
     return render(
         request,
         "quiz/exam_question.html",
@@ -923,6 +967,9 @@ def exam_question(request, session_id):
             "current_index": current_index,
             "total_question_count": total,
             "progress": progress,
+            "session": session,
+            "shuffled_choices": request.session.get("exam_shuffled_choices"),
+            "correct_answer": request.session.get("exam_correct_answer"),
         },
     )
 
@@ -956,6 +1003,15 @@ def exam_result(request, session_id):
         user=request.user, is_submitted=True
     ).order_by("-created_at")
 
+    # 👉 幫每個 session 加上錯題數
+    for s in past_sessions:
+        s.correct_count = s.records.filter(is_correct=True).count()
+        s.wrong_count = s.total_questions - s.correct_count
+
+    wrong_questions = QuestionRecord.objects.filter(
+        exam_session=session, is_correct=False
+    ).select_related("question")
+
     return render(
         request,
         "quiz/exam_result.html",
@@ -966,6 +1022,7 @@ def exam_result(request, session_id):
             "total": total,
             "percentage": percentage,
             "past_sessions": past_sessions,
+            "wrong_questions": wrong_questions,
         },
     )
 

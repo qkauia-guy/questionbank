@@ -43,14 +43,21 @@
         {{ question.question_text|safe_markdown_with_lang:question.category|safe }}
       </div>
 
-      {% for option in "ABCDEFGH" %}
-        {% with choice=question|get_choice:option %}
-          {% if choice and choice != "X" %}
-            <!-- {% include "quiz/_choice_block.html" with choice=choice option=option %} -->
-            {% include "quiz/_choice_block.html" with choice=question|get_choice:option option=option %}
-          {% endif %}
-        {% endwith %}
-      {% endfor %}
+      {# 顯示打亂後選項（若有） #}
+      {% if shuffled_choices %}
+        {% for option, choice in shuffled_choices.items %}
+          {% include "quiz/_choice_block.html" with option=option choice=choice %}
+        {% endfor %}
+      {% else %}
+        {# 備援：未打亂時用原始順序 #}
+        {% for option in "ABCDEFGH" %}
+          {% with choice=question|get_choice:option %}
+            {% if choice and choice != "X" %}
+              {% include "quiz/_choice_block.html" with choice=choice option=option %}
+            {% endif %}
+          {% endwith %}
+        {% endfor %}
+      {% endif %}
 
       {% if question.is_fill_in %}
         <div class="mb-3">
