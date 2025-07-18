@@ -51,6 +51,8 @@ class QuestionRecord(models.Model):
     used_time = models.IntegerField(default=0)
     ai_explanation = models.TextField(null=True, blank=True)
     fill_answer = models.CharField(max_length=100, blank=True, default="")
+    shuffled_choices = models.JSONField(null=True, blank=True)
+    shuffled_correct_answer = models.CharField(max_length=10, blank=True, default="")
     source = models.CharField(
         max_length=20,
         choices=[("mock", "隨機測驗"), ("chapter", "章節練習")],

@@ -40,45 +40,6 @@ def check_answer(question, selected_answer, fill_input):
         )
 
 
-def shuffle_choice_values(question):
-    import random
-
-    answer_letters = question.answer.strip().upper()
-    if not answer_letters or not answer_letters[0].isalpha():
-        raise ValueError(f"❌ 無效的答案格式：{question.answer}")
-
-    first_letter = answer_letters[0]
-    correct_content = getattr(question, f"choice_{first_letter.lower()}", None)
-
-    if not correct_content:
-        raise AttributeError(f"❌ 找不到欄位：choice_{first_letter.lower()}")
-
-    # 建立選項對應表
-    choices = {
-        "A": question.choice_a,
-        "B": question.choice_b,
-        "C": question.choice_c,
-        "D": question.choice_d,
-    }
-
-    # 過濾掉為空或為 "X" 的選項
-    valid_choices = {k: v for k, v in choices.items() if v and v.strip() != "X"}
-
-    items = list(valid_choices.items())
-    random.shuffle(items)
-
-    # 重新編號，回傳混洗後的新選項與新答案
-    shuffled = {}
-    new_answer = ""
-    for idx, (old_letter, content) in enumerate(items):
-        new_letter = chr(ord("A") + idx)
-        shuffled[new_letter] = content
-        if old_letter == first_letter:
-            new_answer = new_letter
-
-    return shuffled, new_answer
-
-
 def sort_key(val):
     try:
         cleaned = val.replace(" ", "")
@@ -953,6 +914,8 @@ def exam_question(request, session_id):
             exam_session=session,
             source=f"模擬考（共 {session.total_questions} 題）",
             used_time=used_time,
+            shuffled_choices=request.session.get("exam_shuffled_choices"),
+            shuffled_correct_answer=request.session.get("exam_correct_answer"),
         )
         return redirect("exam_question", session_id=session.id)
 
