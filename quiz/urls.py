@@ -10,6 +10,7 @@ urlpatterns = [
     path("review/", views.review_wrong_questions, name="review_wrong_questions"),
     path("history/", views.exam_history, name="exam_history"),
     path("practice/", views.chapter_practice, name="chapter_practice"),
+    path("questions/", views.question_list, name="question_list"),
     path("question/<int:pk>/", views.question_detail, name="question_detail"),
     path(
         "get_chapters_by_category/",

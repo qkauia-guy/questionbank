@@ -12,7 +12,9 @@
 
     <div class="mb-3">
       <label for="category" class="form-label">目前科目：</label>
-      <input type="text" readonly class="form-control" value="{{ current_category }}" placeholder="請在上方先選擇科目"/>
+      <a href="#" onclick="scrollToCategory()" class="form-control text-decoration-none bg-light">
+        {{ current_category|default:"請在上方先選擇科目" }}
+      </a>
     </div>
 
     <div class="mb-3">
@@ -37,6 +39,17 @@
 </div>
 
 <script>
+  function scrollToCategory() {
+  const categorySelect = document.getElementById("category");
+  if (categorySelect) {
+    categorySelect.scrollIntoView({ behavior: "smooth", block: "center" });
+    categorySelect.focus();
+    categorySelect.classList.add("border", "border-primary", "shadow");
+    setTimeout(() => {
+      categorySelect.classList.remove("border", "border-primary", "shadow");
+    }, 1500);
+  }
+}
   document.addEventListener("DOMContentLoaded", function () {
     const maxQuestions = {{ total_available|default:0 }};
     const select = document.getElementById("total_questions");

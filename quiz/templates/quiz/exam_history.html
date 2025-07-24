@@ -5,7 +5,7 @@
   {% if grouped_records %}
     {% for date, records in grouped_records %}
       <div class="mb-4">
-        <h5 class="fw-bold">測驗日期：{{ date|date:"Y/m/d" }}</h5>
+        <h6 class="fw-bold">測驗日期：{{ date|date:"Y/m/d" }}</h6>
         <div class="table-responsive">
           <table class="table table-bordered align-middle exam-table">
             <thead class="table-light">

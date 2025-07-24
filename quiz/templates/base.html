@@ -66,6 +66,7 @@
           <li class="nav-item"><a class="nav-link" href="{% url 'login' %}">登入</a></li>
           <li class="nav-item"><a class="nav-link" href="{% url 'register' %}">註冊</a></li>
         {% endif %}
+        <li><a href="{% url 'bookmark_list' %}" class="btn btn-outline-dark btn-sm">收藏/爭議</a></li>
         <li class="nav-item d-flex align-items-center gap-2" id="modelSelector" style="display: none;">
           <label for="modelSelect" class="mb-0">模型</label>
           <select id="modelSelect" class="model-select" onchange="saveModelChoice(this)">
@@ -90,19 +91,45 @@
     <!-- ✅ 功能列 -->
     <div class="container mt-3">
       <!-- 類別選擇 -->
-      <div class="row mb-3">
-        <div class="col-12 col-md-auto">
-          <form method="get" action="" class="d-flex align-items-center gap-2 flex-wrap mx-1">
-            <label for="category" class="mb-0">選擇科目</label>
-            <select name="category" id="category" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
-              <option value="">全部</option>
-              {% for c in categories %}
-                <option value="{{ c }}" {% if current_category == c %}selected{% endif %}>{{ c }}</option>
-              {% endfor %}
-            </select>
-          </form>
-        </div>
+    {% if show_category_filter %}
+      <div class="d-flex flex-wrap align-items-center gap-3">
+        
+        <!-- 🔸 表單1：科目選擇 -->
+        <form method="get" action="" class="d-flex align-items-center gap-2 flex-wrap mx-1">
+          <label for="category" class="mb-0">選擇科目</label>
+          <!-- ✅ 保留搜尋關鍵字 -->
+          {% if search %}
+            <input type="hidden" name="search" value="{{ search }}">
+          {% endif %}
+          {% if request.GET.page %}
+            <input type="hidden" name="page" value="{{ request.GET.page }}">
+          {% endif %}
+
+          <select name="category" id="category" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
+            <option value="">全部</option>
+            {% for c in categories %}
+              <option value="{{ c }}" {% if current_category == c %}selected{% endif %}>{{ c }}</option>
+            {% endfor %}
+          </select>
+        </form>
+
+        <!-- 🔹 表單2：關鍵字搜尋 -->
+        {% if keyword_filter %}
+        <form method="get" action="{% url 'question_list' %}" class="d-inline-flex align-items-center gap-2">
+          {% if current_category %}
+            <input type="hidden" name="category" value="{{ current_category }}">
+          {% endif %}
+          <input type="search" name="search" class="form-control form-control-sm"
+                placeholder="輸入關鍵字..." value="{{ search }}">
+          <button type="submit" class="btn btn-sm btn-outline-dark" style="white-space: nowrap;">
+            關鍵字搜尋
+          </button>
+        </form>
+        {% endif %}
+
       </div>
+    {% endif %}
+      
 
       <div class="d-flex mb-3">
         

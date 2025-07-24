@@ -1,20 +1,29 @@
 import requests
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST, require_GET
 from django.http import JsonResponse
-from django.shortcuts import render
-from .base import convert_to_traditional
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.views.decorators.http import require_GET
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import get_object_or_404
 from ..models import Question
 from django.contrib import messages
-from django.shortcuts import redirect
 from urllib.parse import urlencode, urlparse, parse_qs
 from django.contrib.auth.forms import UserCreationForm
 
 
+# ✅ 封裝：發送 Prompt 給 Ollama 模型
+def send_prompt_to_ollama(prompt, model="qwen2.5-coder:7b", timeout=300):
+    try:
+        response = requests.post(
+            "http://localhost:11434/api/generate",
+            json={"model": model, "prompt": prompt, "stream": False},
+            timeout=timeout,
+        )
+        return response.json()
+    except Exception as e:
+        return {"response": f"⚠️ AI 請求錯誤：{e}"}
+
+
+# ✅ AI 解釋主函式
 def get_ai_feedback_ollama(
     question_text,
     user_ans,
@@ -29,10 +38,7 @@ def get_ai_feedback_ollama(
     category_text = category or (getattr(question, "category", "") or "").strip()
 
     if not options and question:
-        for letter in "ABCDEFGH":
-            choice_text = getattr(question, f"choice_{letter.lower()}", "").strip()
-            if choice_text and choice_text.upper() != "X":
-                options += f"{letter}. {choice_text}\n"
+        options = generate_options_text(question)
 
     prompt = f"""請使用繁體中文回答。
 這是一題選擇題，請幫我解釋為什麼答案不是「{user_ans}」，而是「{correct_ans}」。
@@ -44,16 +50,8 @@ def get_ai_feedback_ollama(
 {options}
 """.strip()
 
-    try:
-        response = requests.post(
-            "http://localhost:11434/api/generate",
-            json={"model": model_name, "prompt": prompt, "stream": False},
-            timeout=180,
-        )
-        data = response.json()
-        return f"� 本次回答由「{model_name}」模型生成：\n\n{data.get('response', '⚠️ AI 沒有回應。')}"
-    except Exception as e:
-        return f"⚠️ AI 請求錯誤：{e}"
+    data = send_prompt_to_ollama(prompt, model=model_name)
+    return f"� 本次回答由「{model_name}」模型生成：\n\n{data.get('response', '⚠️ AI 沒有回應。')}"
 
 
 @require_GET
@@ -70,10 +68,8 @@ def clear_ollama_notice(request):
 
 def set_ollama_model(request):
     model = request.GET.get("model")
-    print(f"🧪 後端收到模型設定：{model}")
     if model:
         request.session["ollama_model"] = model
-        print("🧪 已寫入 session")
     return JsonResponse({"status": "ok", "model": model})
 
 
@@ -85,7 +81,6 @@ def register(request):
             return redirect("login")
     else:
         form = UserCreationForm()
-
     return render(request, "registration/register.html", {"form": form})
 
 
@@ -95,14 +90,6 @@ def is_ollama_running():
         return response.status_code == 200
     except:
         return False
-
-
-# def is_ollama_running():
-#     try:
-#         response = requests.get("http://192.168.0.101:11434/api/tags", timeout=3)
-#         return response.status_code == 200
-#     except Exception:
-#         return False
 
 
 @login_required
@@ -118,7 +105,6 @@ def save_ai_explanation(request, pk):
     else:
         messages.warning(request, "⚠️ 沒有收到解釋內容")
 
-    # ⏩ 回到來源頁面並觸發下一題
     referer = request.META.get("HTTP_REFERER", "/")
     parsed = urlparse(referer)
     base_url = parsed.path
@@ -137,6 +123,7 @@ def ask_ai_followup(request):
     options = request.POST.get("options", "")
     followup = request.POST.get("followup", "")
     chat_history = request.POST.get("chat_history", "")
+    model_name = request.session.get("ollama_model", "qwen2.5-coder:7b")
 
     prompt = f"""以下是使用者與 AI 的過往對話：
 
@@ -157,21 +144,13 @@ def ask_ai_followup(request):
 請用繁體中文回答。
 """
 
-    response = requests.post(
-        "http://localhost:11434/api/generate",
-        json={"model": "qwen2.5-coder:7b", "prompt": prompt, "stream": False},
-        timeout=90,
-    )
-    data = response.json()
+    data = send_prompt_to_ollama(prompt, model=model_name)
     reply = data.get("response", "⚠️ AI 沒有回應。")
-
     return render(request, "quiz/_followup_result.html", {"reply": reply})
 
 
+# ✅ 產生格式化選項
 def generate_options_text(question):
-    """
-    根據題目自動產生選項文字（不含 "X" 的選項），給 AI 用的提示格式。
-    """
     options_text = ""
     for letter in "ABCDEFGH":
         choice = getattr(question, f"choice_{letter.lower()}", "").strip()

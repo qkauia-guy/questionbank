@@ -29,13 +29,25 @@ def toggle_bookmark(request):
 
 @login_required
 def bookmark_list(request):
+    category = request.GET.get("category")
+
+    # 收藏書籤
     favorite_bookmarks = QuestionBookmark.objects.filter(
         user=request.user, bookmark_type="favorite"
     ).select_related("question")
 
+    # 爭議書籤
     flagged_bookmarks = QuestionBookmark.objects.filter(
         user=request.user, bookmark_type="flag"
     ).select_related("question")
+
+    # ✅ 如果有傳入科目，進一步篩選 question 的 category
+    if category:
+        favorite_bookmarks = favorite_bookmarks.filter(question__category=category)
+        flagged_bookmarks = flagged_bookmarks.filter(question__category=category)
+
+    # ✅ 取出所有可用科目供篩選器使用
+    categories = Question.objects.values_list("category", flat=True).distinct()
 
     return render(
         request,
@@ -43,5 +55,8 @@ def bookmark_list(request):
         {
             "favorite_questions": [b.question for b in favorite_bookmarks],
             "flagged_questions": [b.question for b in flagged_bookmarks],
+            "categories": categories,
+            "current_category": category,
+            "show_category_filter": True,
         },
     )

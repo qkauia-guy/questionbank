@@ -62,6 +62,7 @@ def exam_start(request):
             "total_available": total_available,
             "question_options": question_options,
             "last_session": last_session,
+            "show_category_filter": True,
         },
     )
 
@@ -137,6 +138,7 @@ def exam_question(request, session_id):
             "session": session,
             "shuffled_choices": request.session.get("exam_shuffled_choices"),
             "correct_answer": request.session.get("exam_correct_answer"),
+            "show_category_filter": True,
         },
     )
 
@@ -187,5 +189,6 @@ def exam_result(request, session_id):
             "percentage": percentage,
             "past_sessions": past_sessions,
             "wrong_questions": wrong_questions,
+            "show_category_filter": True,
         },
     )

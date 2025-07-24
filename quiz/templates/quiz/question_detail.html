@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% load quiz_extras %}
+
+{% block content %}
+  <div class="container mt-4">
+    <!-- 🌟 題目卡片 -->
+    <div class="card shadow-sm border-dark mb-4">
+      <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+          章節題號：{{ question.chapter }} - {{ question.number }}
+        </h5>
+        <span class="badge bg-light text-dark">{{ question.category }}</span>
+      </div>
+
+      <div class="card-body">
+        <!-- 題幹 -->
+        <div class="mb-4">
+          <h6 class="fw-bold">題目內容：</h6>
+          <div class="markdown-content">
+            {{ question.question_text|safe_markdown_with_lang:question.category|safe }}
+          </div>
+        </div>
+
+        <!-- 選項 -->
+        <div class="mb-4">
+          <h6 class="fw-bold">所有選項：</h6>
+          <ul class="list-group">
+            {% for option in "ABCD" %}
+              {% with choice=question|get_choice:option %}
+                {% if choice and choice != "X" %}
+                  <li class="list-group-item">
+                    <div class="d-flex align-items-center">
+                      {% if option in question.answer %}
+                        <span class="fw-bold text-success me-1">{{ option }}.</span>
+                        <span class="badge bg-success me-2">🅥 正確答案</span>
+                      {% else %}
+                        <span class="fw-bold me-1">{{ option }}.</span>
+                      {% endif %}
+                    </div>
+                    <div class="markdown-content mt-1">
+                      {{ choice|safe_markdown_with_lang:question.category|safe }}
+                    </div>
+                  </li>
+                {% endif %}
+              {% endwith %}
+            {% endfor %}
+          </ul>
+        </div>
+
+        <h6 class="fw-bold text-info mt-3">解析：</h6>
+        <div class="markdown-content">
+          {{ question.explanation|safe_markdown_ai|safe }}
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

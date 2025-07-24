@@ -13,6 +13,9 @@ from .base import (
 )
 from .ai import get_ai_feedback_ollama
 import random
+from django.core.paginator import Paginator
+from django.db.models import Q
+from ..models import Question
 
 
 @login_required
@@ -174,6 +177,8 @@ def chapter_practice(request):
             "correct_choices_list": correct_choices_list,
             "is_favorited": is_favorited,
             "is_flagged": is_flagged,
+            "show_category_filter": True,
+            "keyword_filter": True,
         },
     )
 
@@ -367,6 +372,8 @@ def mock_exam(request):
             "is_favorited": is_favorited,
             "is_flagged": is_flagged,
             "used_time": used_time,
+            "show_category_filter": True,
+            "keyword_filter": True,
         },
     )
 
@@ -404,7 +411,50 @@ def question_detail(request, pk):
     return render(request, "quiz/question_detail.html", {"question": question})
 
 
+from django.db.models import Q
+from django.core.paginator import Paginator
+from ..models import Question
+
+
 @login_required
 def question_list(request):
-    questions = Question.objects.all().order_by("id")
-    return render(request, "quiz/question_list.html", {"questions": questions})
+    search = request.GET.get("search", "").strip()
+    category = request.GET.get("category", "").strip()
+
+    questions = Question.objects.all()
+
+    if category:
+        questions = questions.filter(category=category)
+
+    if search:
+        questions = questions.filter(
+            Q(question_text__icontains=search)
+            | Q(choice_a__icontains=search)
+            | Q(choice_b__icontains=search)
+            | Q(choice_c__icontains=search)
+            | Q(choice_d__icontains=search)
+            | Q(explanation__icontains=search)
+            | Q(category__icontains=search)
+        )
+
+    questions = questions.order_by("chapter", "number_order")
+
+    paginator = Paginator(questions, 20)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    # 所有可選科目（用於下拉選單）
+    categories = Question.objects.values_list("category", flat=True).distinct()
+
+    return render(
+        request,
+        "quiz/question_list.html",
+        {
+            "questions": page_obj,
+            "search": search,
+            "current_category": category,
+            "categories": categories,
+            "show_category_filter": True,
+            "keyword_filter": True,
+        },
+    )

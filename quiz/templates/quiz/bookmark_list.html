@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% load quiz_extras %}
+
+{% block content %}
+<div class="container mt-3">
+  <!-- 🔽 下拉選單 -->
+  <div class="d-flex align-items-center gap-2 mb-4">
+    <label for="bookmark-filter" class="form-label fw-bold mb-0">篩選類別：</label>
+    <select id="bookmark-filter" class="form-select form-select-sm w-auto">
+      <option value="favorite">收藏題</option>
+      <option value="flag">爭議題</option>
+      <option value="all">全部</option>
+    </select>
+  </div>
+
+  <!-- ⭐ 收藏題目 -->
+  <div class="bookmark-section" data-type="favorite">
+    <h4 class="mb-3"><span class="badge bg-warning text-dark">收藏題</span></h4>
+    {% if favorite_questions %}
+      {% for q in favorite_questions %}
+        <div class="card mb-3 shadow-sm border-warning">
+          <div class="card-header bg-warning bg-opacity-25 d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-2">
+              <span class="badge bg-secondary">{{ q.category }}</span>
+              <strong>{{ q.chapter }} - {{ q.number }}</strong>
+            </div>
+            <a href="{% url 'question_detail' q.id %}" class="btn btn-sm btn-outline-success">查看</a>
+          </div>
+          <div class="card-body">
+            <div class="markdown-content">
+              {{ q.question_text|safe_markdown_with_lang:q.category|safe }}
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <p class="text-muted">你目前沒有收藏任何題。</p>
+    {% endif %}
+  </div>
+
+  <!-- ⚠️ 爭議題目 -->
+  <div class="bookmark-section" data-type="flag">
+    <h4 class="mb-3"><span class="badge bg-danger">爭議題</span></h4>
+    {% if flagged_questions %}
+      {% for q in flagged_questions %}
+        <div class="card mb-3 shadow-sm border-danger">
+          <div class="card-header bg-danger bg-opacity-25 d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-2">
+              <span class="badge bg-secondary">{{ q.category }}</span>
+              <strong>{{ q.chapter }} - {{ q.number }}</strong>
+            </div>
+            <a href="{% url 'question_detail' q.id %}" class="btn btn-sm btn-outline-dark">查看</a>
+          </div>
+          <div class="card-body">
+            <div class="markdown-content">
+              {{ q.question_text|safe_markdown_with_lang:q.category|safe }}
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <p class="text-muted">你目前沒有標記任何爭議題。</p>
+    {% endif %}
+  </div>
+</div>
+
+<!-- JS：篩選 -->
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const filter = document.getElementById("bookmark-filter");
+    const sections = document.querySelectorAll(".bookmark-section");
+
+    function updateVisibility() {
+      const selected = filter.value;
+      sections.forEach((section) => {
+        section.style.display =
+          selected === "all" || section.dataset.type === selected
+            ? "block"
+            : "none";
+      });
+    }
+
+    filter.addEventListener("change", updateVisibility);
+    updateVisibility();
+  });
+
+  
+</script>
+{% endblock %}

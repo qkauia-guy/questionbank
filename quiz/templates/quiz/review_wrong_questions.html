@@ -89,10 +89,62 @@
           </div>
         {% endif %}
       </div>
+      
     </div>
+    
   {% empty %}
     <p class="text-muted">太棒了！目前沒有錯題可複習。</p>
   {% endfor %}
+  <div aria-label="題目分頁" class="my-4">
+    <ul class="pagination justify-content-center">
+
+      {# ⬅️ 上一頁按鈕 #}
+      {% if records.has_previous %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ records.previous_page_number }}{% if current_category %}&category={{ current_category }}{% endif %}" aria-label="上一頁">
+            <span aria-hidden="true">&laquo;</span>
+          </a>
+        </li>
+      {% else %}
+        <li class="page-item disabled">
+          <span class="page-link" aria-hidden="true">&laquo;</span>
+        </li>
+      {% endif %}
+
+      {# 🔢 顯示部分頁碼按鈕 #}
+      {% for page_num in records.paginator.page_range %}
+        {% if page_num == records.number %}
+          <li class="page-item active" aria-current="page">
+            <span class="page-link">{{ page_num }}</span>
+          </li>
+        {% elif page_num >= records.number|add:"-2" and page_num <= records.number|add:"2" %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_num }}{% if current_category %}&category={{ current_category }}{% endif %}">{{ page_num }}</a>
+          </li>
+        {% elif page_num == 1 or page_num == records.paginator.num_pages %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_num }}{% if current_category %}&category={{ current_category }}{% endif %}">{{ page_num }}</a>
+          </li>
+        {% elif page_num == records.number|add:"-3" or page_num == records.number|add:"3" %}
+          <li class="page-item disabled"><span class="page-link">…</span></li>
+        {% endif %}
+      {% endfor %}
+
+      {# ➡️ 下一頁按鈕 #}
+      {% if records.has_next %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ records.next_page_number }}{% if current_category %}&category={{ current_category }}{% endif %}" aria-label="下一頁">
+            <span aria-hidden="true">&raquo;</span>
+          </a>
+        </li>
+      {% else %}
+        <li class="page-item disabled">
+          <span class="page-link" aria-hidden="true">&raquo;</span>
+        </li>
+      {% endif %}
+
+    </ul>
+  </div>
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
