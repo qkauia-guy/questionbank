@@ -28,7 +28,7 @@
     <form method="post">
       {% csrf_token %}
       <input type="hidden" name="question_id" value="{{ question.id }}" />
-      <input type="hidden" name="used_time" id="used_time" value="0" />
+      <input type="hidden" name="used_time" id="used_time" value="0"/>
 
       {% if question.image %}
         <div class="mb-3">

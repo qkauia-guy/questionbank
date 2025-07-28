@@ -14,10 +14,6 @@
   作答時間：<span id="timer">0</span> 秒
 </div>
 
-<!-- 題目進度條 -->
-<input type="hidden" name="used_time" id="used_time" value="0">
-
-<div class="container">
   <div class="mb-3 text-muted mt-3">
     {% if category and category != "None" %}
       <span class="me-3">🗂 科目：{{ question.category }}</span>
@@ -39,7 +35,6 @@
       </div>
     </div>
   {% endif %}
-</div>
 
 <!-- 科目未選擇提示 -->
 {% if not category or category == "None" %}

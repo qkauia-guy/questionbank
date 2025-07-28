@@ -35,11 +35,18 @@ cd questionbank
 git clone https://github.com/你的帳號/questionbank.git
 
 python -m venv venv
-.\venv\Scripts\Activate.ps1
+source venv/bin/activate
+
 pip install -r requirements.txt
 
 python manage.py migrate
 python manage.py runserver
+```
+
+## 套件寫入 requirements.txt
+
+```bash
+pip freeze > requirements.txt
 ```
 
 ## 測試

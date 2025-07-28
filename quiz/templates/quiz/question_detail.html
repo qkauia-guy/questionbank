@@ -47,11 +47,66 @@
           </ul>
         </div>
 
+        <!-- ✅ 解析區塊 -->
         <h6 class="fw-bold text-info mt-3">解析：</h6>
-        <div class="markdown-content">
+        <div class="markdown-content mb-4">
           {{ question.explanation|safe_markdown_ai|safe }}
         </div>
+
+        <!-- ✅ 書籤筆記 -->
+        {% if bookmarks %}
+          {% for bookmark in bookmarks %}
+            <div class="alert mt-3
+                        {% if bookmark.bookmark_type == 'favorite' %}
+                          alert-warning bg-warning bg-opacity-25
+                        {% else %}
+                          alert-danger bg-danger bg-opacity-25
+                        {% endif %} border-0 rounded-3">
+              <strong>{{ bookmark.get_bookmark_type_display }}筆記：</strong>
+              <div class="mb-0">{{ bookmark.note|default:"（尚未填寫）" }}</div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="alert alert-secondary mt-4">
+            ⚠️ 尚未加入書籤，請先將本題加入「收藏」或「爭議」才能編輯備註。
+          </div>
+        {% endif %}
+        {% if bookmarks %}
+          <hr class="my-4">
+          {% for bookmark in bookmarks %}
+            <form method="POST" 
+                  action="{% url 'update_bookmark_note' question.id bookmark.bookmark_type %}" 
+                  class="mb-3 p-3 rounded-3
+                        {% if bookmark.bookmark_type == 'favorite' %}
+                          bg-opacity-25 border border-warning
+                        {% else %}
+                          bg-opacity-25 border border-danger
+                        {% endif %}"
+                  onsubmit="return validateNote(this)">
+              {% csrf_token %}
+              <textarea name="note" class="form-control mb-3" rows="2" placeholder="寫下{{ bookmark.get_bookmark_type_display }}筆記"></textarea>
+              <button type="submit" class="btn btn-sm
+                {% if bookmark.bookmark_type == 'favorite' %}
+                  btn-outline-warning
+                {% else %}
+                  btn-outline-danger
+                {% endif %}">
+                儲存{{ bookmark.get_bookmark_type_display }}筆記
+              </button>
+            </form>
+          {% endfor %}
+        {% endif %}
       </div>
     </div>
   </div>
+  <script>
+  function validateNote(form) {
+    const note = form.note.value.trim();
+    if (!note) {
+      alert("⚠️ 筆記不能為空！");
+      return false;
+    }
+    return true;
+  }
+</script>
 {% endblock %}

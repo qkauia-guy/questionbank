@@ -1,7 +1,7 @@
 {% load quiz_extras %}
 {% load markdown_deux_tags %}
 
-<div class="question-card my-3">
+<div class="question-card my-3 mx-0">
   <div class="d-flex gap-2 mb-3">
   <!-- 收藏按鈕 -->
     <button class="btn btn-sm toggle-bookmark 
@@ -23,7 +23,7 @@
   <form method="post">
     {% csrf_token %}
     <input type="hidden" name="question_id" value="{{ question.id }}" />
-    <input type="hidden" name="used_time" id="used_time" value="0" />
+    <input type="hidden" name="used_time" id="used_time" value="0"/>
 
     <!-- 題目與附圖 -->
     <div class="mb-3">
@@ -73,20 +73,25 @@
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content p-3" style="max-height: 90vh; overflow-y: auto">
           <div class="modal-body">
-            {% if result %}
-              ✅ <strong>答對了！</strong><br />
-            {% else %}
-              ❌ <strong>答錯了。</strong><br />
-            {% endif %}
 
-            {% if correct_answer %}
-              <div class="mt-2">🎯 正確答案：<strong>{{ correct_answer }}</strong></div>
-            {% endif %}
+            <!-- ✅ 答題結果 -->
+            <div class="alert {% if result %}alert-success{% else %}alert-danger{% endif %} d-flex align-items-center gap-2" role="alert">
+              <div style="font-size: 1.5rem;">
+                {% if result %} 🅥 {% else %} 🅧 {% endif %}
+              </div>
+              <div>
+                <div class="fw-bold mb-1">{% if result %}答對了！{% else %}答錯了。{% endif %}</div>
+                {% if correct_answer %}
+                  <div class="small text-muted">🎯 正確答案：<strong>{{ correct_answer }}</strong></div>
+                {% endif %}
+              </div>
+            </div>
+
 
             {% if not result and ai_explanation %}
               <div class="mt-3">
                 <strong>🤖 AI 解釋：</strong><br />
-                {{ ai_explanation|safe_markdown_ai|safe }}
+                <div id="ai-explanation-content">{{ ai_explanation|safe_markdown_ai|safe }}</div>
                 <hr />
                 <form method="post" action="{% url 'save_ai_explanation' question.id %}?next=1" class="my-3">
                   {% csrf_token %}
@@ -106,6 +111,16 @@
                       先前解釋 <span class="arrow">▼</span>
                     </button>
                   {% endif %}
+                  <div class="markdown-content" id="explanation-{{ q.id }}">
+                    {{ q.explanation }}
+                  </div>
+                  <button type="button"
+                          class="speak-btn rounded-circle border-0 bg-white shadow-sm p-2"
+                          data-target="ai-explanation-content"
+                          title="朗讀解說"
+                          style="width: 40px; height: 40px;">
+                    <i class="bi bi-volume-up-fill text-dark fs-5"></i>
+                  </button>
                 </form>
 
                 {% if allow_followup %}
@@ -265,6 +280,179 @@ document.addEventListener("DOMContentLoaded", function () {
         .catch((err) => {
           alert("⚠️ 操作失敗：" + err);
         });
+    });
+  });
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+  const thinks = document.querySelectorAll("think");
+  thinks.forEach(el => {
+    const blockquote = document.createElement("blockquote");
+    blockquote.innerHTML = el.innerHTML;
+    el.replaceWith(blockquote);
+  });
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+  const speakBtn = document.querySelector(".speak-btn");
+  let offsetX = 0, offsetY = 0;
+  let isDragging = false;
+
+  // === 電腦滑鼠事件 ===
+  speakBtn.addEventListener("mousedown", (e) => {
+    isDragging = true;
+    offsetX = e.clientX - speakBtn.offsetLeft;
+    offsetY = e.clientY - speakBtn.offsetTop;
+  });
+
+  document.addEventListener("mousemove", (e) => {
+    if (!isDragging) return;
+    speakBtn.style.left = `${e.clientX - offsetX}px`;
+    speakBtn.style.top = `${e.clientY - offsetY}px`;
+  });
+
+  document.addEventListener("mouseup", () => {
+    isDragging = false;
+  });
+
+  // === 手機觸控事件 ===
+  speakBtn.addEventListener("touchstart", (e) => {
+    isDragging = true;
+    const touch = e.touches[0];
+    offsetX = touch.clientX - speakBtn.offsetLeft;
+    offsetY = touch.clientY - speakBtn.offsetTop;
+  });
+
+  document.addEventListener("touchmove", (e) => {
+    if (!isDragging) return;
+    const touch = e.touches[0];
+    speakBtn.style.left = `${touch.clientX - offsetX}px`;
+    speakBtn.style.top = `${touch.clientY - offsetY}px`;
+  });
+
+  document.addEventListener("touchend", () => {
+    isDragging = false;
+  });
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+  const speakerBtn = document.getElementById("draggable-speaker");
+
+  let offsetX, offsetY;
+  let isDragging = false;
+
+  function getClientXY(e) {
+    if (e.type.includes("touch")) {
+      return {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY,
+      };
+    } else {
+      return {
+        x: e.clientX,
+        y: e.clientY,
+      };
+    }
+  }
+
+  function startDrag(e) {
+    isDragging = true;
+    const { x, y } = getClientXY(e);
+    const rect = speakerBtn.getBoundingClientRect();
+    offsetX = x - rect.left;
+    offsetY = y - rect.top;
+    e.preventDefault(); // ✅ 防止手機頁面滑動
+  }
+
+  function doDrag(e) {
+    if (!isDragging) return;
+    const { x, y } = getClientXY(e);
+    speakerBtn.style.left = `${x - offsetX}px`;
+    speakerBtn.style.top = `${y - offsetY}px`;
+  }
+
+  function endDrag() {
+    isDragging = false;
+  }
+
+  // 👉 桌機支援
+  speakerBtn.addEventListener("mousedown", startDrag);
+  document.addEventListener("mousemove", doDrag);
+  document.addEventListener("mouseup", endDrag);
+
+  // 👉 手機支援
+  speakerBtn.addEventListener("touchstart", startDrag, { passive: false });
+  document.addEventListener("touchmove", doDrag, { passive: false });
+  document.addEventListener("touchend", endDrag);
+});
+
+
+document.addEventListener("DOMContentLoaded", function () {
+  const buttons = document.querySelectorAll(".speak-btn");
+  let voices = [];
+
+  // 取得可用語音
+  function populateVoices() {
+    voices = speechSynthesis.getVoices();
+    // 印出所有語音選項
+    console.log("📢 可用語音：");
+    voices.forEach((v, i) => {
+      console.log(`[${i}] ${v.name} | ${v.lang}`);
+    });
+  }
+
+  // 語音載入後觸發
+  populateVoices();
+  if (speechSynthesis.onvoiceschanged !== undefined) {
+    speechSynthesis.onvoiceschanged = populateVoices;
+  }
+
+  buttons.forEach((btn) => {
+    btn.addEventListener("click", function () {
+      const targetId = btn.getAttribute("data-target");
+      const targetEl = document.getElementById(targetId);
+
+      if (!targetEl) {
+        console.warn("❌ 找不到目標元素！");
+        return;
+      }
+
+      const text = targetEl.innerText.trim();
+      if (!text) {
+        console.warn("⚠️ 沒有內容可朗讀！");
+        return;
+      }
+
+      // 若正在講話則停止
+      if (speechSynthesis.speaking) {
+        speechSynthesis.cancel();
+        btn.innerHTML = '<i class="bi bi-volume-up-fill text-dark fs-5"></i>';
+        return;
+      }
+
+      btn.innerHTML = '<i class="bi bi-volume-mute-fill text-dark fs-5"></i>';
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = "zh-TW"; // 預設語言
+      utterance.rate = 1;
+
+      // 嘗試找到支援中文的語音
+      const preferredVoice = voices.find(v =>
+        v.lang === "zh-TW" || v.lang === "zh-CN" || v.lang.startsWith("zh")
+      );
+
+      if (preferredVoice) {
+        utterance.voice = preferredVoice;
+        console.log("✅ 使用語音：", preferredVoice.name);
+      } else {
+        console.warn("⚠️ 找不到中文語音，使用預設");
+      }
+
+      utterance.onend = () => {
+        btn.innerHTML = '<i class="bi bi-volume-up-fill text-dark fs-5"></i>';
+      };
+
+      speechSynthesis.speak(utterance);
     });
   });
 });

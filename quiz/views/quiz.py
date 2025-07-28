@@ -89,7 +89,7 @@ def chapter_practice(request):
 
         selected_answer = [a.upper() for a in request.POST.getlist("selected_answer")]
         fill_input = request.POST.get("fill_answer", "").strip()
-        used_time = request.POST.get("used_time", 0)
+        used_time = int(request.POST.get("used_time", 0))
         result = check_answer(question, selected_answer, fill_input)
         correct_answer = question.answer
 
@@ -121,7 +121,7 @@ def chapter_practice(request):
             ),
             used_time=used_time,
             ai_explanation=ai_explanation if not result else None,
-            source="mock",
+            source="章節練習",
         )
 
     chapter_list = (
@@ -296,7 +296,7 @@ def mock_exam(request):
                 ),
                 used_time=used_time,
                 ai_explanation=ai_explanation if not result else None,
-                source="mock",
+                source="隨機練習",
             )
 
     else:
@@ -367,7 +367,7 @@ def mock_exam(request):
             "categories": categories,
             "current_category": category,
             "category_total": category_total,
-            "shuffled_choices": request.session.get("shuffled_choices"),
+            "shuffled_choices": shuffled_choices,
             "ollama_model": model_name,
             "is_favorited": is_favorited,
             "is_flagged": is_flagged,

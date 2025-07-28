@@ -1,8 +1,9 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.http import JsonResponse
 from ..models import Question, QuestionBookmark
+from collections import defaultdict
 
 
 @login_required
@@ -49,6 +50,10 @@ def bookmark_list(request):
     # ✅ 取出所有可用科目供篩選器使用
     categories = Question.objects.values_list("category", flat=True).distinct()
 
+    all_notes = defaultdict(dict)
+    for bookmark in QuestionBookmark.objects.filter(user=request.user):
+        all_notes[bookmark.question_id][bookmark.bookmark_type] = bookmark.note
+
     return render(
         request,
         "quiz/bookmark_list.html",
@@ -58,5 +63,38 @@ def bookmark_list(request):
             "categories": categories,
             "current_category": category,
             "show_category_filter": True,
+            "all_notes": all_notes,
         },
     )
+
+
+@login_required
+def question_detail(request, pk):
+    question = get_object_or_404(Question, pk=pk)
+
+    # 撈出所有該使用者針對這一題的書籤（可能有收藏與爭議）
+    bookmarks = QuestionBookmark.objects.filter(user=request.user, question=question)
+
+    return render(
+        request,
+        "quiz/question_detail.html",
+        {
+            "question": question,
+            "bookmarks": bookmarks,  # ✅ 傳入多筆
+        },
+    )
+
+
+@require_POST
+@login_required
+def update_bookmark_note(request, question_id, bookmark_type):
+    note = request.POST.get("note", "").strip()
+    bookmark = get_object_or_404(
+        QuestionBookmark,
+        user=request.user,
+        question_id=question_id,
+        bookmark_type=bookmark_type,
+    )
+    bookmark.note = note
+    bookmark.save()
+    return redirect(request.META.get("HTTP_REFERER", "bookmark_list"))

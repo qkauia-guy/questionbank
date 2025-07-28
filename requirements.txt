@@ -24,6 +24,7 @@ httpx==0.28.1
 idna==3.10
 markdown2==2.5.3
 ollama==0.5.1
+opencc-python-reimplemented==0.1.7
 pillow==11.3.0
 proto-plus==1.26.1
 protobuf==5.29.5

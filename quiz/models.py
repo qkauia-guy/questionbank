@@ -40,6 +40,13 @@ class Question(models.Model):
     def __str__(self):
         return f"{self.chapter}-{self.number}"
 
+    @property
+    def allow_multiple(self):
+        """
+        判斷答案是否包含多個字母（例如 'AC'、'BD'），視為多選題
+        """
+        return not self.is_fill_in and len(self.answer.strip()) > 1
+
 
 class QuestionRecord(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
@@ -116,6 +123,7 @@ class QuestionBookmark(models.Model):
     question = models.ForeignKey("Question", on_delete=models.CASCADE)
     bookmark_type = models.CharField(max_length=10, choices=BOOKMARK_TYPES)
     created_at = models.DateTimeField(auto_now_add=True)
+    note = models.TextField(blank=True)
 
     class Meta:
         unique_together = ("user", "question", "bookmark_type")

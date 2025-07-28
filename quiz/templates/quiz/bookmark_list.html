@@ -2,8 +2,34 @@
 {% load quiz_extras %}
 
 {% block content %}
+<style>
+  .markdown-content.limited {
+    max-height: 6.3em;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .markdown-content.limited::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    height: 1.5em;
+    width: 100%;
+    background: linear-gradient(to bottom, transparent, white);
+  }
+
+  .markdown-content.expanded {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .toggle-expand {
+    font-size: 0.9em;
+  }
+</style>
+
 <div class="container mt-3">
-  <!-- 🔽 下拉選單 -->
+  <!-- 🔽 篩選選單 -->
   <div class="d-flex align-items-center gap-2 mb-4">
     <label for="bookmark-filter" class="form-label fw-bold mb-0">篩選類別：</label>
     <select id="bookmark-filter" class="form-select form-select-sm w-auto">
@@ -27,9 +53,17 @@
             <a href="{% url 'question_detail' q.id %}" class="btn btn-sm btn-outline-success">查看</a>
           </div>
           <div class="card-body">
-            <div class="markdown-content">
-              {{ q.question_text|safe_markdown_with_lang:q.category|safe }}
+            <div class="markdown-wrapper mb-2">
+              <div class="markdown-content limited">{{ q.question_text|safe_markdown_with_lang:q.category|safe }}</div>
+              <button type="button" class="btn btn-sm btn-link p-0 toggle-expand">顯示更多</button>
             </div>
+            {% with note=all_notes|dict_get:q.id|dict_get:"favorite" %}
+              {% if note %}
+                <div class="alert alert-warning bg-warning bg-opacity-25 border-0 rounded-3 mt-3 mb-0">
+                  <strong>㊟ 收藏筆記：</strong>{{ note }}
+                </div>
+              {% endif %}
+            {% endwith %}
           </div>
         </div>
       {% endfor %}
@@ -52,9 +86,17 @@
             <a href="{% url 'question_detail' q.id %}" class="btn btn-sm btn-outline-dark">查看</a>
           </div>
           <div class="card-body">
-            <div class="markdown-content">
-              {{ q.question_text|safe_markdown_with_lang:q.category|safe }}
+            <div class="markdown-wrapper mb-2">
+              <div class="markdown-content limited">{{ q.question_text|safe_markdown_with_lang:q.category|safe }}</div>
+              <button type="button" class="btn btn-sm btn-link p-0 toggle-expand">顯示更多</button>
             </div>
+            {% with note=all_notes|dict_get:q.id|dict_get:"flag" %}
+              {% if note %}
+                <div class="alert alert-danger bg-danger bg-opacity-25 border-0 rounded-3 mt-3 mb-0">
+                  <strong>㊟ </strong>{{ note }}
+                </div>
+              {% endif %}
+            {% endwith %}
           </div>
         </div>
       {% endfor %}
@@ -64,9 +106,10 @@
   </div>
 </div>
 
-<!-- JS：篩選 -->
+<!-- JS：篩選 + 展開效果 -->
 <script>
   document.addEventListener("DOMContentLoaded", function () {
+    // 篩選類型
     const filter = document.getElementById("bookmark-filter");
     const sections = document.querySelectorAll(".bookmark-section");
 
@@ -82,8 +125,19 @@
 
     filter.addEventListener("change", updateVisibility);
     updateVisibility();
-  });
 
-  
+    // 展開收合效果
+    const toggleButtons = document.querySelectorAll(".toggle-expand");
+    toggleButtons.forEach((btn) => {
+      btn.addEventListener("click", function () {
+        const content = btn.previousElementSibling;
+        content.classList.toggle("expanded");
+        content.classList.toggle("limited");
+        btn.textContent = content.classList.contains("expanded")
+          ? "顯示較少"
+          : "顯示更多";
+      });
+    });
+  });
 </script>
 {% endblock %}

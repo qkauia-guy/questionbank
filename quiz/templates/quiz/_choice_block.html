@@ -2,19 +2,57 @@
 {% load markdown_deux_tags %}
 
 {% if choice and choice|cut:" " != "X" %}
-  <div class="form-check d-flex align-items-start gap-2 py-2 px-3 mb-3 rounded-3"
-       style="background: linear-gradient(to right, #f0f4ff, #e6f0ff);">
-    <input class="form-check-input mt-1"
-           type="checkbox"
-           name="selected_answer"
-           value="{{ option }}"
-           id="option_{{ option }}"
-           {% if option in selected_answer %}checked{% endif %}>
-    <label class="form-check-label flex-grow-1" for="option_{{ option }}">
-      <div class="d-flex align-items-start gap-2">
-        <strong>{{ option }}.</strong>
-        <div>{{ choice|safe_markdown_with_lang_for_options:question.category|safe }}</div>
-      </div>
-    </label>
-  </div>
+  <label for="option_{{ option }}"
+         class="form-check choice-block mb-2 px-3 py-0 rounded-3 w-100"
+         style="
+           display: grid;
+           grid-template-columns: auto auto 4fr;
+           gap: 0.75rem;
+           align-items: center;
+           cursor: pointer;
+         ">
+
+    <input
+      class="form-check-input"
+      type="{% if question.allow_multiple %}checkbox{% else %}radio{% endif %}"
+      name="selected_answer"
+      value="{{ option }}"
+      id="option_{{ option }}"
+      {% if option in selected_answer %}checked{% endif %} />
+
+    <!-- 固定選項 -->
+    <div class="fw-bold option-label mt-1">{{ option }}.</div>
+
+    <!-- markdown -->
+    <div class="markdown-content">
+      {{ choice|safe_markdown_with_lang_for_options:question.category|safe }}
+    </div>
+  </label>
 {% endif %}
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll(".form-check-input").forEach((input) => {
+      input.addEventListener("change", () => {
+        const type = input.type;
+        if (type === "radio") {
+          // 取消所有已選
+          document.querySelectorAll(".choice-block").forEach((label) =>
+            label.classList.remove("selected")
+          );
+        }
+
+        // 勾選的加入 .selected
+        if (input.checked) {
+          input.closest(".choice-block").classList.add("selected");
+        } else {
+          input.closest(".choice-block").classList.remove("selected");
+        }
+      });
+
+      // 初始載入就標記 selected
+      if (input.checked) {
+        input.closest(".choice-block").classList.add("selected");
+      }
+    });
+  });
+</script>
